@@ -1,0 +1,24 @@
+{
+  "key": "raw_missing_path",
+  "url": "https://raw.githubusercontent.com/sindresorhus/slugify/3b17b2e84b97624a683aafaa38184bf2746fab22/NOTICE",
+  "user_agent": false,
+  "strict": true,
+  "probe_contract": "0xe4EE5F00FDC7Afed66CBC27eE0096169Eb244C5e",
+  "tx": "0x222bd1cd173fa0c52ee96b8e35d95cc0ffd5958680beed619cef8cdfa6a8c78f",
+  "status": "ACCEPTED",
+  "ok": true,
+  "seconds": 19,
+  "measured_at": "2026-09-29T16:52:24.378Z",
+  "failure": null,
+  "stderr_tail": "",
+  "result": {
+    "attrs": "body,headers,status",
+    "err": "",
+    "fnv": "e5204baa945604da",
+    "head": "404: Not Found",
+    "headers": "{\"content-length\": \"b'14'\", \"x-cache\": \"b'HIT'\"}",
+    "len": 14,
+    "sha256": "d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed",
+    "status": 404
+  }
+}

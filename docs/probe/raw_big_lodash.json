@@ -1,0 +1,24 @@
+{
+  "key": "raw_big_lodash",
+  "url": "https://raw.githubusercontent.com/lodash/lodash/f299b52f39486275a9e6483b60a410e06520c538/lodash.js",
+  "user_agent": false,
+  "strict": true,
+  "probe_contract": "0xb62ab2Fc2F107298ee4C31b7bD273e4b70a47109",
+  "tx": "0x1dd782598325580ce33e1ea3c3aa6fabaee294324ea94b702e0cb989177d9604",
+  "status": "ACCEPTED",
+  "ok": true,
+  "seconds": 28,
+  "measured_at": "2026-09-29T16:52:55.299Z",
+  "failure": null,
+  "stderr_tail": "",
+  "result": {
+    "attrs": "body,headers,status",
+    "err": "",
+    "fnv": "2db3137948344165",
+    "head": "/**\n * @license\n * Lodash <https://lodash.com/>\n * Copyright OpenJS Foundation and other contributors <https://openjsf.org/>\n * Released under MIT license <https://lodash.com/license>\n * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>\n * Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors\n */\n;(function() {\n\n  /** Used as a safe reference for `undefined` i",
+    "headers": "{\"cache-control\": \"b'max-age=300'\", \"etag\": \"b'W/\\\"b7a3975484d5fe8d68cbb1048251ca4158b2ea02ef48de667f88153ca4c90139\\\"'\", \"x-cache\": \"b'HIT'\"}",
+    "len": 544096,
+    "sha256": "4c04561befdf653aef017a42ac5addf68ea943cdfca6bdee5ce04e04e8139f54",
+    "status": 200
+  }
+}

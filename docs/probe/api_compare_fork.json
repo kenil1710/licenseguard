@@ -1,0 +1,29 @@
+{
+  "key": "api_compare_fork",
+  "url": "https://api.github.com/repos/sindresorhus/slugify/compare/2014476d54bfa6ba4ec15618b5c845fff16f6af3...HEAD?per_page=1",
+  "user_agent": true,
+  "strict": false,
+  "probe_contract": "0xe4EE5F00FDC7Afed66CBC27eE0096169Eb244C5e",
+  "tx": "0x30b110263878ad61b9b0b5e250598a02ed3c7fa95d20d6677476933c60d98755",
+  "status": "ACCEPTED",
+  "ok": true,
+  "seconds": 14,
+  "measured_at": "2026-09-29T16:53:03.172Z",
+  "failure": null,
+  "stderr_tail": "",
+  "result": {
+    "attrs": "body,headers,status",
+    "err": "",
+    "fnv": "1961a2c4c07a9b9d",
+    "head": "{\"url\":\"https://api.github.com/repos/sindresorhus/slugify/compare/2014476d54bfa6ba4ec15618b5c845fff16f6af3...HEAD\",\"html_url\":\"https://github.com/sindresorhus/slugify/compare/2014476d54bfa6ba4ec15618b5c845fff16f6af3...HEAD\",\"permalink_url\":\"https://github.com/sindresorhus/slugify/compare/sindresorhus:2014476...sindresorhus:3b17b2e\",\"diff_url\":\"https://github.com/sindresorhus/slugify/compare/201447",
+    "headers": "{\"cache-control\": \"b'public, max-age=60, s-maxage=60'\", \"etag\": \"b'W/\\\"b0b7729c0dae605c760c7abfe83db1456f65834cd22bd01e3d839d61e06b14b1\\\"'\", \"x-ratelimit-limit\": \"b'60'\", \"x-ratelimit-remaining\": \"b'54'\", \"x-ratelimit-reset\": \"b'1790704345'\", \"x-ratelimit-resource\": \"b'core'\", \"x-ratelimit-used\": \"b'6'\"}",
+    "j_ahead_by": "3",
+    "j_behind_by": "2",
+    "j_merge_base": "2acf5b3cadf7faed3928536d051104502ae2b667",
+    "j_status": "diverged",
+    "json_keys": "ahead_by,base_commit,behind_by,commits,diff_url,files,html_url,merge_base_commit,patch_url,permalink_url,status,total_commits,url",
+    "len": 18267,
+    "sha256": "243d4ea22833c3ab58a3d41879dff530554c1b95b582e0ab73bd162ca1eeea0d",
+    "status": 200
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "key": "raw_missing_repo",
+  "url": "https://raw.githubusercontent.com/kenil1710/no-such-repo-licenseguard/3b17b2e84b97624a683aafaa38184bf2746fab22/index.js",
+  "user_agent": false,
+  "strict": true,
+  "probe_contract": "0x923cE5228d8ebD1e64638DF7Dc580Fb0D1484bC9",
+  "tx": "0xe2c0443387a59a1b6700b13e519574be35b9c7e40161e3da745e3387249c5082",
+  "status": "ACCEPTED",
+  "ok": true,
+  "seconds": 16,
+  "measured_at": "2026-09-29T16:52:21.546Z",
+  "failure": null,
+  "stderr_tail": "",
+  "result": {
+    "attrs": "body,headers,status",
+    "err": "",
+    "fnv": "e5204baa945604da",
+    "head": "404: Not Found",
+    "headers": "{\"content-length\": \"b'14'\", \"x-cache\": \"b'HIT'\"}",
+    "len": 14,
+    "sha256": "d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed",
+    "status": 404
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "key": "api_rate_limit",
+  "url": "https://api.github.com/rate_limit",
+  "user_agent": true,
+  "strict": false,
+  "probe_contract": "0xb62ab2Fc2F107298ee4C31b7bD273e4b70a47109",
+  "tx": "0x2b6aede39a6b17a1f23ac45f0d6bde0ba016bdfefacba48fd2201bfae3154d9d",
+  "status": "ACCEPTED",
+  "ok": true,
+  "seconds": 14,
+  "measured_at": "2026-09-29T16:53:34.183Z",
+  "failure": null,
+  "stderr_tail": "",
+  "result": {
+    "attrs": "body,headers,status",
+    "err": "",
+    "fnv": "3e04371c819e540e",
+    "head": "{\"resources\":{\"code_search\":{\"limit\":60,\"remaining\":43,\"reset\":1790704345,\"used\":17},\"core\":{\"limit\":60,\"remaining\":43,\"reset\":1790704345,\"used\":17},\"graphql\":{\"limit\":0,\"remaining\":0,\"reset\":1790704410,\"used\":0},\"integration_manifest\":{\"limit\":5000,\"remaining\":5000,\"reset\":1790704410,\"used\":0},\"search\":{\"limit\":10,\"remaining\":10,\"reset\":1790700870,\"used\":0}},\"rate\":{\"limit\":60,\"remaining\":43,\"res",
+    "headers": "{\"cache-control\": \"b'no-cache'\", \"content-length\": \"b'427'\", \"x-ratelimit-limit\": \"b'60'\", \"x-ratelimit-remaining\": \"b'43'\", \"x-ratelimit-reset\": \"b'1790704345'\", \"x-ratelimit-resource\": \"b'core'\", \"x-ratelimit-used\": \"b'17'\"}",
+    "json_keys": "rate,resources",
+    "len": 427,
+    "sha256": "d8fe2fac268501ba4f30e05898391b48123462929c3a4793e9c01189fa2301c7",
+    "status": 200
+  }
+}

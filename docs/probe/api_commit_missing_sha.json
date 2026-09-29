@@ -1,0 +1,27 @@
+{
+  "key": "api_commit_missing_sha",
+  "url": "https://api.github.com/repos/sindresorhus/slugify/commits/0000000000000000000000000000000000000000",
+  "user_agent": true,
+  "strict": false,
+  "probe_contract": "0x5e2bf5badD187131815E79c04618767bcA354335",
+  "tx": "0xe2918621c40762327b7af66071d50f77526bacd1c4a03e5a867056192ae6b5c4",
+  "status": "ACCEPTED",
+  "ok": true,
+  "seconds": 9,
+  "measured_at": "2026-09-29T16:53:21.754Z",
+  "failure": null,
+  "stderr_tail": "",
+  "result": {
+    "attrs": "body,headers,status",
+    "err": "",
+    "fnv": "ab00fd6825e7e54b",
+    "head": "{\"message\":\"No commit found for SHA: 0000000000000000000000000000000000000000\",\"documentation_url\":\"https://docs.github.com/rest/commits/commits#get-a-commit\",\"status\":\"422\"}",
+    "headers": "{\"content-length\": \"b'174'\", \"x-ratelimit-limit\": \"b'60'\", \"x-ratelimit-remaining\": \"b'44'\", \"x-ratelimit-reset\": \"b'1790704345'\", \"x-ratelimit-resource\": \"b'core'\", \"x-ratelimit-used\": \"b'16'\"}",
+    "j_message": "No commit found for SHA: 0000000000000000000000000000000000000000",
+    "j_status": "422",
+    "json_keys": "documentation_url,message,status",
+    "len": 174,
+    "sha256": "04d8fd58eb293dd2bda098ae9edb1ea2c877200888c781b4dafe96dda5ae57af",
+    "status": 422
+  }
+}

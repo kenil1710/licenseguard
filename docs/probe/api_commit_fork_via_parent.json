@@ -1,0 +1,26 @@
+{
+  "key": "api_commit_fork_via_parent",
+  "url": "https://api.github.com/repos/sindresorhus/slugify/commits/2014476d54bfa6ba4ec15618b5c845fff16f6af3",
+  "user_agent": true,
+  "strict": false,
+  "probe_contract": "0x5e2bf5badD187131815E79c04618767bcA354335",
+  "tx": "0x8314e0c53dd6a034b30069e82ea8d6c49d3167c0b1ad630f536b77f92dd1e79d",
+  "status": "ACCEPTED",
+  "ok": true,
+  "seconds": 27,
+  "measured_at": "2026-09-29T16:53:11.551Z",
+  "failure": null,
+  "stderr_tail": "",
+  "result": {
+    "attrs": "body,headers,status",
+    "err": "",
+    "fnv": "652cb3913f3cb8d9",
+    "head": "{\"sha\":\"2014476d54bfa6ba4ec15618b5c845fff16f6af3\",\"node_id\":\"C_kwDOB8DuH9oAKDIwMTQ0NzZkNTRiZmE2YmE0ZWMxNTYxOGI1Yzg0NWZmZjE2ZjZhZjM\",\"commit\":{\"author\":{\"name\":\"Anyi\",\"email\":\"anneeeee@users.noreply.github.com\",\"date\":\"2026-09-10T03:40:55Z\"},\"committer\":{\"name\":\"GitHub\",\"email\":\"noreply@github.com\",\"date\":\"2026-09-10T03:40:55Z\"},\"message\":\"Update overridable-replacements.js\",\"tree\":{\"sha\":\"e8158e61",
+    "headers": "{\"cache-control\": \"b'public, max-age=60, s-maxage=60'\", \"etag\": \"b'W/\\\"160c9b629f1698e0abaed752a808c80c03c20abebbb94c9acedc26933deb309b\\\"'\", \"x-ratelimit-limit\": \"b'60'\", \"x-ratelimit-remaining\": \"b'50'\", \"x-ratelimit-reset\": \"b'1790704345'\", \"x-ratelimit-resource\": \"b'core'\", \"x-ratelimit-used\": \"b'10'\"}",
+    "j_sha": "2014476d54bfa6ba4ec15618b5c845fff16f6af3",
+    "json_keys": "author,comments_url,commit,committer,files,html_url,node_id,parents,sha,stats,url",
+    "len": 5099,
+    "sha256": "a74cc81f8307e93d9045b1ffaf935eb898bf8e2564efc91d1abddc51d6c85fe8",
+    "status": 200
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "key": "raw_license",
+  "url": "https://raw.githubusercontent.com/sindresorhus/slugify/3b17b2e84b97624a683aafaa38184bf2746fab22/license",
+  "user_agent": false,
+  "strict": true,
+  "probe_contract": "0xb62ab2Fc2F107298ee4C31b7bD273e4b70a47109",
+  "tx": "0x7090732fea567465cc08e70db43b63dca72fcb490566a0be223f9b9d470994eb",
+  "status": "ACCEPTED",
+  "ok": true,
+  "seconds": 21,
+  "measured_at": "2026-09-29T16:52:26.713Z",
+  "failure": null,
+  "stderr_tail": "",
+  "result": {
+    "attrs": "body,headers,status",
+    "err": "",
+    "fnv": "9bff3916b4cad282",
+    "head": "MIT License\n\nCopyright (c) Sindre Sorhus <sindresorhus@gmail.com> (https://sindresorhus.com)\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell ",
+    "headers": "{\"cache-control\": \"b'max-age=300'\", \"etag\": \"b'W/\\\"06bf57ddd6723aaa2704f5d41c6d3e0ef3af6421f65a9d3cec9e35ea54889404\\\"'\", \"x-cache\": \"b'HIT'\"}",
+    "len": 1117,
+    "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3",
+    "status": 200
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "key": "api_commit_noua",
+  "url": "https://api.github.com/repos/sindresorhus/slugify/commits/3b17b2e84b97624a683aafaa38184bf2746fab22",
+  "user_agent": false,
+  "strict": false,
+  "probe_contract": "0xe4EE5F00FDC7Afed66CBC27eE0096169Eb244C5e",
+  "tx": "0xbfa28196e7cfa9fd277ea638b4414f1e37608abe0adccbd96216d7299c20b8bd",
+  "status": "ACCEPTED",
+  "ok": true,
+  "seconds": 11,
+  "measured_at": "2026-09-29T16:52:36.274Z",
+  "failure": null,
+  "stderr_tail": "",
+  "result": {
+    "attrs": "body,headers,status",
+    "err": "",
+    "fnv": "a461069527608417",
+    "head": "{\"sha\":\"3b17b2e84b97624a683aafaa38184bf2746fab22\",\"node_id\":\"C_kwDOB8DuH9oAKDNiMTdiMmU4NGI5NzYyNGE2ODNhYWZhYTM4MTg0YmYyNzQ2ZmFiMjI\",\"commit\":{\"author\":{\"name\":\"Sindre Sorhus\",\"email\":\"sindresorhus@gmail.com\",\"date\":\"2026-09-18T19:15:26Z\"},\"committer\":{\"name\":\"Sindre Sorhus\",\"email\":\"sindresorhus@gmail.com\",\"date\":\"2026-09-18T19:15:26Z\"},\"message\":\"Meta tweaks\",\"tree\":{\"sha\":\"ac68f22a1e893107922949",
+    "headers": "{\"cache-control\": \"b'public, max-age=60, s-maxage=60'\", \"etag\": \"b'W/\\\"3000b90c64e31b52ac0044a6ddbc36e791eef881a6d2db343acf71e4fdbc6e1c\\\"'\", \"x-ratelimit-limit\": \"b'60'\", \"x-ratelimit-remaining\": \"b'57'\", \"x-ratelimit-reset\": \"b'1790704345'\", \"x-ratelimit-resource\": \"b'core'\", \"x-ratelimit-used\": \"b'3'\"}",
+    "j_sha": "3b17b2e84b97624a683aafaa38184bf2746fab22",
+    "json_keys": "author,comments_url,commit,committer,files,html_url,node_id,parents,sha,stats,url",
+    "len": 4304,
+    "sha256": "48ee45db4059c88ba43c39b6d35dfe36432b87c7fc18acaccf44fed2ca498b90",
+    "status": 200
+  }
+}

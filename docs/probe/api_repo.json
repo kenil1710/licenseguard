@@ -1,0 +1,26 @@
+{
+  "key": "api_repo",
+  "url": "https://api.github.com/repos/sindresorhus/slugify",
+  "user_agent": true,
+  "strict": false,
+  "probe_contract": "0x923cE5228d8ebD1e64638DF7Dc580Fb0D1484bC9",
+  "tx": "0x5b710224ac57bd6aad3b3b5e44b3dee6adffe3a095a0ac47a43983870902f690",
+  "status": "ACCEPTED",
+  "ok": true,
+  "seconds": 36,
+  "measured_at": "2026-09-29T16:53:24.451Z",
+  "failure": null,
+  "stderr_tail": "",
+  "result": {
+    "attrs": "body,headers,status",
+    "err": "",
+    "fnv": "de2eaf0f1d029531",
+    "head": "{\"id\":130084383,\"node_id\":\"MDEwOlJlcG9zaXRvcnkxMzAwODQzODM=\",\"name\":\"slugify\",\"full_name\":\"sindresorhus/slugify\",\"private\":false,\"owner\":{\"login\":\"sindresorhus\",\"id\":170270,\"node_id\":\"MDQ6VXNlcjE3MDI3MA==\",\"avatar_url\":\"https://avatars.githubusercontent.com/u/170270?v=4\",\"gravatar_id\":\"\",\"url\":\"https://api.github.com/users/sindresorhus\",\"html_url\":\"https://github.com/sindresorhus\",\"followers_url\":",
+    "headers": "{\"cache-control\": \"b'public, max-age=60, s-maxage=60'\", \"etag\": \"b'W/\\\"66f5397a8ae6a237a3140bc8cedfa21593974dd2b83222fc75253477bb4d6a24\\\"'\", \"x-ratelimit-limit\": \"b'60'\", \"x-ratelimit-remaining\": \"b'43'\", \"x-ratelimit-reset\": \"b'1790704345'\", \"x-ratelimit-resource\": \"b'core'\", \"x-ratelimit-used\": \"b'17'\"}",
+    "j_created_at": "2018-04-18T15:34:47Z",
+    "json_keys": "allow_forking,archive_url,archived,assignees_url,blobs_url,branches_url,clone_url,collaborators_url,comments_url,commits_url,compare_url,contents_url,contributors_url,created_at,default_branch,deployments_url,description,disabled,downloads_url,events_url,fork,forks,forks_count,forks_url,full_name,git_commits_url,git_refs_url,git_tags_url,git_url,has_discussions,has_downloads,has_issues,has_pages,h",
+    "len": 5407,
+    "sha256": "162fa2965826e23bf5f3d1bb0add8754ae5dfadcd384763e6de1b8dab96b3eff",
+    "status": 200
+  }
+}

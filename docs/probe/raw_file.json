@@ -1,0 +1,24 @@
+{
+  "key": "raw_file",
+  "url": "https://raw.githubusercontent.com/sindresorhus/slugify/3b17b2e84b97624a683aafaa38184bf2746fab22/index.js",
+  "user_agent": false,
+  "strict": true,
+  "probe_contract": "0x5e2bf5badD187131815E79c04618767bcA354335",
+  "tx": "0x60eb0c6f215ee74960246f8e665a387c6b2324ba2052cf64e2975a5f5c46c9c7",
+  "status": "ACCEPTED",
+  "ok": true,
+  "seconds": 13,
+  "measured_at": "2026-09-29T16:52:18.404Z",
+  "failure": null,
+  "stderr_tail": "",
+  "result": {
+    "attrs": "body,headers,status",
+    "err": "",
+    "fnv": "32d8eec2ef5576f0",
+    "head": "import escapeStringRegexp from 'escape-string-regexp';\nimport transliterate from '@sindresorhus/transliterate';\nimport builtinOverridableReplacements from './overridable-replacements.js';\n\nconst decamelize = string => string\n\t// Separate capitalized words.\n\t// Each pattern captures the least leading context it needs, as a greedy quantifier there causes quadratic backtracking on long runs of the sa",
+    "headers": "{\"cache-control\": \"b'max-age=300'\", \"etag\": \"b'W/\\\"377f0bbde99e065e68f25e905c5c1fb823003fdc4528eba7bc4049d0f2659e43\\\"'\", \"x-cache\": \"b'HIT'\"}",
+    "len": 5883,
+    "sha256": "65f19dcf087db337e168a80aa4258be749a690ccb6ff96f961156531815b8d74",
+    "status": 200
+  }
+}

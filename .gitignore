@@ -1,0 +1,5 @@
+test/node_modules/
+test/.accounts.json
+__pycache__/
+*.pyc
+.DS_Store
