@@ -1,0 +1,66 @@
+{
+  "deployments": {
+    "studiodev": {
+      "network": "studiodev",
+      "chain_id": 61997,
+      "explorer": "https://explorer-studio-dev.genlayer.com/",
+      "LicenseGuard": {
+        "address": "0xe8cf318130b9C57BB91D7F67f544bFfACA29fFd7",
+        "deploy_tx": "0x4cf4b202537f3b1172dba237a05ec23bc7e547817025fb089d06efdd521ce78d",
+        "label": "canonical",
+        "source_bytes": 123063,
+        "source_sha256": "7cf70cef27b5e3c39c29d40cf55f888c7a74783777bf3fec3dd8d86e6fd6c7c9",
+        "policy_version": "1.1.0",
+        "owner": "0x235744d240Cf84e4fb5c36b712f3E4F405933214",
+        "constructor": {
+          "min_bond_wei": "1000000000000000000",
+          "challenge_bond_wei": "200000000000000000",
+          "contest_bond_wei": "100000000000000000",
+          "challenge_window_s": "2592000",
+          "unbond_delay_s": "604800",
+          "contest_window_s": "172800",
+          "deadline_s": "86400"
+        },
+        "deployed_at": "2026-09-29T18:20:22.264Z"
+      },
+      "LicenseGuardDemo": {
+        "address": "0x531aE9C6ac7db213dC075123Ab797f594A46E587",
+        "deploy_tx": "0x20ccefb2f1a5d98e17c30e8c201d76d13af77a3229b6575084a519f2e4d973f4",
+        "label": "DEMO (outcomes, contest, refusals): windows in minutes",
+        "source_bytes": 123063,
+        "source_sha256": "7cf70cef27b5e3c39c29d40cf55f888c7a74783777bf3fec3dd8d86e6fd6c7c9",
+        "policy_version": "1.1.0",
+        "owner": "0x235744d240Cf84e4fb5c36b712f3E4F405933214",
+        "constructor": {
+          "min_bond_wei": "1000000000000000000",
+          "challenge_bond_wei": "200000000000000000",
+          "contest_bond_wei": "100000000000000000",
+          "challenge_window_s": "780",
+          "unbond_delay_s": "60",
+          "contest_window_s": "180",
+          "deadline_s": "420"
+        },
+        "deployed_at": "2026-09-29T18:20:29.379Z"
+      },
+      "LicenseGuardDemoStall": {
+        "address": "0x67960678e52857a3B225275Ff3dDDCFb59a31970",
+        "deploy_tx": "0x760b7a8e87d76e6530d07928b9dc4e0817b28c05703589d1bfc76ba643d4b5cb",
+        "label": "DEMO (forfeit, unreadable-to-deadline): windows in minutes",
+        "source_bytes": 123063,
+        "source_sha256": "7cf70cef27b5e3c39c29d40cf55f888c7a74783777bf3fec3dd8d86e6fd6c7c9",
+        "policy_version": "1.1.0",
+        "owner": "0x235744d240Cf84e4fb5c36b712f3E4F405933214",
+        "constructor": {
+          "min_bond_wei": "1000000000000000000",
+          "challenge_bond_wei": "200000000000000000",
+          "contest_bond_wei": "100000000000000000",
+          "challenge_window_s": "780",
+          "unbond_delay_s": "60",
+          "contest_window_s": "180",
+          "deadline_s": "480"
+        },
+        "deployed_at": "2026-09-29T18:20:38.819Z"
+      }
+    }
+  }
+}

@@ -408,6 +408,7 @@ class Threat5_FileNeverLoads(unittest.TestCase):
 
     def test_pending_bond_never_verifiable(self):
         w = World()
+        w.bonded_repo()
         w.gh.fail(compare_url("acme/app", SHA_B), 503)
         w.call(PROJ, "post_bond", "acme/app", SHA_B, "MIT", value=GEN)
         self.assertEqual(w.call(TRIGGER, "verify_bond", 1)["outcome"], "RETRY")

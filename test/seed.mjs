@@ -11,6 +11,9 @@
  *     NOT_DERIVED          an unrelated file (…-attributed/src/app.js)
  *     CONTEST HELD         the NOT_DERIVED challenger contests; the re-read holds
  *     refusals on chain    a path outside the bonded repo (threat 1), a duplicate pair (threat 3)
+ *     SQUATTER             an address that does not control the repo posts a bond FIRST;
+ *                          it reserves nothing, the owner's bond verifies, and the
+ *                          squatter's pending bond is rejected and refunded
  *     refusals on chain    a LICENSE-vs-LICENSE challenge (review A1), the same copied file
  *                          named against a FORK of the original (review A3)
  *   Lane B (LicenseGuardDemoStall) - one bond on kenil1710/licenseguard-fixture-vanishing,
@@ -35,9 +38,9 @@ const acc = accounts();
 const GEN = 10n ** 18n;
 const ORIG = ["sindresorhus/slugify", "3b17b2e84b97624a683aafaa38184bf2746fab22", "index.js"];
 const FX = {
-  stripped: ["kenil1710/licenseguard-fixture-stripped", "9c3bce920042fc5ca0b4219b84ed725370e5d13f"],
-  attributed: ["kenil1710/licenseguard-fixture-attributed", "b26192a8e7df4495e9092724610fa30e7c5bb21a"],
-  vanishing: ["kenil1710/licenseguard-fixture-vanishing", "a3db821a4be4d7956e648879dac3c26ae6dad966"],
+  stripped: ["kenil1710/licenseguard-fixture-stripped", "00aa5788e36122277595281d639e7467c48c9689"],
+  attributed: ["kenil1710/licenseguard-fixture-attributed", "8849b82c36c476486fabf192db22f783c0c781e9"],
+  vanishing: ["kenil1710/licenseguard-fixture-vanishing", "112b0766ccbd2d72141c0a374eb2bfc75874db14"],
   originVanishing: ["kenil1710/licenseguard-fixture-origin-vanishing", "4f60c2c60a9c1047349440dfa6b604b3e2d4a975"],
 };
 const LOG = new URL("../docs/seed-run.log", import.meta.url);
@@ -115,11 +118,15 @@ async function laneA() {
   const cfg = await L.view("get_config");
   const bond = BigInt(cfg.min_bond_wei), stake = BigInt(cfg.challenge_bond_wei), cstake = BigInt(cfg.contest_bond_wei);
 
-  const b1 = (await L.tx("proj1", "post_bond", [...FX.stripped, "MIT"], bond, "post_bond stripped")).ret?.bond_id ?? 1;
-  const b2 = (await L.tx("proj2", "post_bond", [...FX.attributed, "MIT"], bond, "post_bond attributed")).ret?.bond_id ?? 2;
+  const sq = (await L.tx("chal3", "post_bond", [...FX.stripped, "MIT"], bond, "SQUATTER post_bond on stripped (first)")).ret?.bond_id;
+  const b1 = (await L.tx("proj1", "post_bond", [...FX.stripped, "MIT"], bond, "post_bond stripped (owner, second)")).ret?.bond_id ?? 2;
+  const b2 = (await L.tx("proj2", "post_bond", [...FX.attributed, "MIT"], bond, "post_bond attributed")).ret?.bond_id ?? 3;
   await persist(L, N, "trigger", "verify_bond", [b1], 0n, "verify_bond stripped", { accept: (r) => r?.outcome === "ACTIVE" || r?.outcome === "REJECTED" });
   await persist(L, N, "trigger", "verify_bond", [b2], 0n, "verify_bond attributed", { accept: (r) => r?.outcome === "ACTIVE" || r?.outcome === "REJECTED" });
   log(N, `is_compliant stripped=${await L.view("is_compliant", [FX.stripped[0]])} attributed=${await L.view("is_compliant", [FX.attributed[0]])}`);
+  evidence.lanes[N].squatter = { bond: await L.view("get_bond", [sq]), owner_bond: await L.view("get_bond", [b1]),
+                                 slot: await L.view("get_bond_for", [FX.stripped[0]]) };
+  log(N, `squatter bond #${sq}: ${evidence.lanes[N].squatter.bond.status} ${evidence.lanes[N].squatter.bond.verify_reason}; slot -> #${evidence.lanes[N].squatter.slot.bond_id}`);
 
   const c1 = (await L.tx("chal1", "challenge", [b1, ...ORIG, "src/slugify.js", "MIT"], stake, "challenge stripped copy")).ret?.challenge_id;
   const c2 = (await L.tx("chal2", "challenge", [b2, ...ORIG, "vendor/slugify.js", "MIT"], stake, "challenge attributed copy")).ret?.challenge_id;
@@ -150,7 +157,7 @@ async function laneA() {
     await sleepUntil(N, free + 20, `bond #${bid} lock`);
     await persist(L, N, role, "withdraw_bond", [bid], 0n, `withdraw_bond #${bid}`, { accept: (r) => r?.status === "OK" });
   }
-  for (const role of ["proj1", "proj2", "chal1", "chal2", "trigger"]) {
+  for (const role of ["proj1", "proj2", "chal1", "chal2", "chal3", "trigger"]) {
     const owed = BigInt(await L.view("get_balance", [acc[role].address]));
     if (owed > 0n) await L.tx(role, "claim", [], 0n, `claim ${role} (${gen(owed)} GEN)`);
   }
@@ -158,7 +165,7 @@ async function laneA() {
   for (const cid of [c1, c2, c3]) {
     evidence.lanes[N].final.challenges.push({ ...(await L.view("get_challenge", [cid])), verify: await L.view("verify_challenge", [cid]) });
   }
-  for (const bid of [b1, b2]) evidence.lanes[N].final.bonds.push(await L.view("get_bond", [bid]));
+  for (const bid of [sq, b1, b2]) evidence.lanes[N].final.bonds.push(await L.view("get_bond", [bid]));
   save();
   log(N, `DONE stats ${JSON.stringify(evidence.lanes[N].final.stats)}`);
 }

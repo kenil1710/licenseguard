@@ -335,11 +335,15 @@ class World:
     def bonded_repo(self, repo="acme/app", sha=SHA_B, owner=PROJ, files=None,
                     license_text=PROJ_LICENSE, license_path="LICENSE", marker=True,
                     history="identical", behind=0, committed=iso(T0 - 86400),
-                    created=iso(T0 - 2 * 365 * 86400)):
+                    created=iso(T0 - 2 * 365 * 86400), head_owner=None):
         self.gh.history(repo, sha, status=history, behind=behind, date=committed)
         self.gh.repo(repo, created=created)
         if marker:
-            self.gh.put(repo, sha, ".licenseguard", "licenseguard bonder: " + owner + "\n")
+            self.gh.put(repo, sha, ".licenseguard", "# LicenseGuard bonder\n" + owner + "\n")
+            # the repository's CURRENT head names the bonder too (default: same)
+            head = owner if head_owner is None else head_owner
+            if head:
+                self.gh.put(repo, "HEAD", ".licenseguard", "# LicenseGuard bonder\n" + head + "\n")
         if license_text is not None:
             self.gh.put(repo, sha, license_path, license_text)
         for p, t in (files or {}).items():

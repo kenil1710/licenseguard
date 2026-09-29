@@ -170,6 +170,19 @@ def main():
     ok, ev = run("test_attacks")
     check(g, "test_attacks.py whole file in the suite", ok, ev)
 
+    print("\n- identity (round 2)")
+    g = "Identity"
+    ok, ev = run("test_logic", "TestIdentity")
+    check(g, "no squatting; current control at HEAD; exact-line marker; raw checks before the API", ok, ev)
+    body = ast.unparse(METHODS["post_bond"])
+    check(g, "post_bond reserves no slot (only a verified bond occupies it)",
+          "bond_by_repo[" not in body and "pending_by_repo" in body,
+          "post_bond writes pending_by_repo only; bond_by_repo written on activation and cleared on withdraw")
+    cb = ast.unparse(FUNCS["_collect_bond"])
+    check(g, "cheap raw checks precede every GitHub API call in bond verification",
+          cb.index("_get_api(") > cb.index("HEAD_REF") > cb.index("MARKER_PATH") and cb.index("_get_api(") > cb.index("LICENSE_NAMES"),
+          "order: marker@commit, marker@HEAD, LICENSE, then compare API, repo API")
+
     print("\n- chain")
     g = "On chain"
     dep = json.loads((ROOT / "deployments.json").read_text())["deployments"]["studiodev"]
@@ -226,6 +239,13 @@ def main():
         wr = [s for s in B.get("steps", []) if s["label"].startswith("REFUSAL: withdraw")]
         check(g, "withdraw refused while a forfeit is open", bool(wr) and (wr[0].get("returned") or {}).get("status") == "REJECTED",
               wr and (wr[0].get("returned") or {}).get("reason", ""))
+        sq = A.get("squatter", {})
+        check(g, "squatter posted first, could not block the owner", sq.get("bond", {}).get("status") == "REJECTED"
+              and sq.get("owner_bond", {}).get("status") == "ACTIVE"
+              and sq.get("slot", {}).get("bond_id") == sq.get("owner_bond", {}).get("bond_id"),
+              "squatter bond #%s %s (%s); owner bond #%s %s; slot -> #%s"
+              % (sq.get("bond", {}).get("bond_id"), sq.get("bond", {}).get("status"), sq.get("bond", {}).get("verify_reason"),
+                 sq.get("owner_bond", {}).get("bond_id"), sq.get("owner_bond", {}).get("status"), sq.get("slot", {}).get("bond_id")))
         refusals = [s for s in A.get("steps", []) if s["label"].startswith("REFUSAL")]
         check(g, "mechanical refusals on chain: path escape, fork of the original (A3), LICENSE vs LICENSE (A1)", len(refusals) == 3 and all(
             isinstance(s.get("returned"), dict) and s["returned"].get("status") == "REJECTED" for s in refusals),

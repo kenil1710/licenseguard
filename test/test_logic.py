@@ -509,6 +509,175 @@ class TestModelIsTheLastStepOnly(unittest.TestCase):
 # =============================================================================
 
 
+class TestIdentity(unittest.TestCase):
+    """Identity fixes: no squatting, current control, exact-line marker, and
+    the cheap raw checks before any GitHub API call."""
+
+    def setUp(self):
+        self.w = World()
+
+    def post(self, who, repo="acme/app", sha=SHA_B):
+        out = self.w.call(who, "post_bond", repo, sha, "MIT", value=GEN)
+        self.assertEqual(out["status"], "OK", out)
+        return out["bond_id"]
+
+    def verify(self, bid):
+        return self.w.call(TRIGGER, "verify_bond", bid)
+
+    # --- 1. no squatting
+    def test_squatter_cannot_block_the_owner(self):
+        self.w.bonded_repo(owner=PROJ)                   # the real owner's marker
+        squat = self.post(OUTSIDER)                      # squatter first
+        mine = self.post(PROJ)
+        self.assertEqual(self.verify(mine)["outcome"], "ACTIVE")
+        self.assertEqual(self.w.bd(squat).status, "REJECTED")
+        self.assertEqual(self.w.bd(squat).verify_reason, "SUPERSEDED_REPOSITORY_ALREADY_BONDED")
+        self.assertEqual(self.w.owed(OUTSIDER), GEN)
+        self.assertTrue(self.w.view("is_compliant", "acme/app"))
+        self.assertEqual(self.w.view("get_bond_for", "acme/app")["bond_id"], mine)
+
+    def test_squatter_verified_first_is_just_rejected(self):
+        self.w.bonded_repo(owner=PROJ)
+        squat = self.post(OUTSIDER)
+        self.assertEqual(self.verify(squat)["reason"], "LICENSEGUARD_FILE_DOES_NOT_NAME_BONDER")
+        mine = self.post(PROJ)
+        self.assertEqual(self.verify(mine)["outcome"], "ACTIVE")
+
+    def test_squatter_rejected_without_api_budget(self):
+        self.w.bonded_repo(owner=PROJ)
+        squat = self.post(OUTSIDER)
+        lg_stub.CALLS.clear()
+        self.verify(squat)
+        self.assertEqual(self.w.api_calls(), [])
+
+    def test_first_verified_wins_among_honest_rivals(self):
+        """Two addresses named in the marker: whoever verifies first."""
+        self.w.bonded_repo(owner=PROJ)
+        self.w.gh.put("acme/app", SHA_B, ".licenseguard", PROJ + "\n" + PROJ2 + "\n")
+        self.w.gh.put("acme/app", "HEAD", ".licenseguard", PROJ + "\n" + PROJ2 + "\n")
+        a = self.post(PROJ)
+        b = self.post(PROJ2)
+        self.assertEqual(self.verify(b)["outcome"], "ACTIVE")
+        self.assertEqual(self.w.bd(a).status, "REJECTED")
+
+    def test_no_second_pending_after_verification(self):
+        self.w.bond()
+        out = self.w.call(OUTSIDER, "post_bond", "acme/app", SHA_B, "MIT", value=GEN)
+        self.assertEqual(out["status"], "REJECTED")
+        self.assertEqual(self.w.owed(OUTSIDER), GEN)
+
+    def test_many_squatters_bounded_and_rest_rejected_on_touch(self):
+        self.w.bonded_repo(owner=PROJ)
+        squats = [self.post(OUTSIDER) for _ in range(LG.MAX_SUPERSEDE + 5)]
+        mine = self.post(PROJ)
+        out = self.verify(mine)
+        self.assertEqual(out["rival_pending_bonds_rejected"], LG.MAX_SUPERSEDE)
+        left = [b for b in squats if self.w.bd(b).status == "PENDING"]
+        self.assertEqual(len(left), 5)
+        lg_stub.CALLS.clear()
+        self.assertEqual(self.w.call(OUTSIDER, "verify_bond", left[0])["reason"],
+                         "SUPERSEDED_REPOSITORY_ALREADY_BONDED")
+        self.assertEqual(self.w.call(OUTSIDER, "settle_stalled_bond", left[1])["outcome"], "REJECTED")
+        self.assertEqual(lg_stub.CALLS, [])                # no validator asked
+        for b in left[2:]:
+            self.w.call(TRIGGER, "settle_stalled_bond", b)
+        self.assertEqual(self.w.owed(OUTSIDER), GEN * len(squats))
+        self.w.drain(OUTSIDER)
+
+    def test_repo_free_again_after_withdraw(self):
+        bid = self.w.bond()
+        self.w.advance(30 * 86400)
+        self.w.call(PROJ, "withdraw_bond", bid)
+        self.w.bonded_repo(sha=SHA_B2)
+        b2 = self.post(PROJ, sha=SHA_B2)
+        self.assertEqual(self.verify(b2)["outcome"], "ACTIVE")
+
+    def test_rejected_pending_does_not_clear_a_verified_slot(self):
+        bid = self.w.bond()
+        self.assertEqual(self.w.view("get_bond_for", "acme/app")["bond_id"], bid)
+
+    # --- 2. current control
+    def test_former_maintainer_cannot_bond_an_old_commit(self):
+        self.w.bonded_repo(owner=PROJ2, head_owner=PROJ)   # old commit names PROJ2, head names PROJ
+        bid = self.post(PROJ2)
+        out = self.verify(bid)
+        self.assertEqual((out["outcome"], out["reason"]), ("REJECTED", "CURRENT_HEAD_DOES_NOT_NAME_BONDER"))
+        self.assertEqual(self.w.owed(PROJ2), GEN)
+
+    def test_head_without_marker(self):
+        self.w.bonded_repo(owner=PROJ, head_owner="")
+        bid = self.post(PROJ)
+        self.assertEqual(self.verify(bid)["reason"], "CURRENT_HEAD_HAS_NO_LICENSEGUARD_FILE")
+
+    def test_head_names_bonder_but_commit_does_not(self):
+        self.w.bonded_repo(owner=PROJ2, head_owner=PROJ)
+        bid = self.post(PROJ)
+        self.assertEqual(self.verify(bid)["reason"], "LICENSEGUARD_FILE_DOES_NOT_NAME_BONDER")
+
+    def test_head_read_via_raw_head_url(self):
+        self.w.bonded_repo()
+        bid = self.post(PROJ)
+        lg_stub.CALLS.clear()
+        self.verify(bid)
+        self.assertIn(raw("acme/app", "HEAD", ".licenseguard"), [u for u, _h in lg_stub.CALLS])
+
+    def test_head_outage_is_retry(self):
+        self.w.bonded_repo()
+        self.w.gh.fail(raw("acme/app", "HEAD", ".licenseguard"), 503)
+        bid = self.post(PROJ)
+        self.assertEqual(self.verify(bid)["outcome"], "RETRY")
+
+    # --- 3. exact line
+    def test_substring_does_not_count(self):
+        self.w.bonded_repo()
+        for text in ("licenseguard bonder: " + PROJ + "\n", PROJ + "ff\n", "x" + PROJ + "\n",
+                     "[" + PROJ + "]\n"):
+            self.w.gh.put("acme/app", SHA_B, ".licenseguard", text)
+            self.w.gh.put("acme/app", "HEAD", ".licenseguard", text)
+            bid = self.post(PROJ)
+            self.assertEqual(self.verify(bid)["reason"], "LICENSEGUARD_FILE_DOES_NOT_NAME_BONDER", text)
+
+    def test_exact_line_trimmed_case_insensitive(self):
+        self.w.bonded_repo()
+        text = "# owners\n   " + PROJ.upper().replace("0X", "0x") + "  \r\n"
+        self.w.gh.put("acme/app", SHA_B, ".licenseguard", text)
+        self.w.gh.put("acme/app", "HEAD", ".licenseguard", text)
+        bid = self.post(PROJ)
+        self.assertEqual(self.verify(bid)["outcome"], "ACTIVE")
+
+    def test_names_bonder_pure(self):
+        self.assertTrue(LG._names_bonder("a\n" + PROJ + "\n", PROJ))
+        self.assertTrue(LG._names_bonder("  " + PROJ.upper() + "\t", PROJ))
+        self.assertFalse(LG._names_bonder(PROJ + " " + PROJ2, PROJ))
+        self.assertFalse(LG._names_bonder("", PROJ))
+
+    # --- cheap checks before the API
+    def test_no_api_call_when_marker_fails(self):
+        self.w.bonded_repo(marker=False)
+        bid = self.post(PROJ)
+        lg_stub.CALLS.clear()
+        self.verify(bid)
+        self.assertEqual(self.w.api_calls(), [])
+
+    def test_no_api_call_when_license_missing(self):
+        self.w.bonded_repo(license_text=None)
+        bid = self.post(PROJ)
+        lg_stub.CALLS.clear()
+        self.assertEqual(self.verify(bid)["reason"], "NO_LICENSE_FILE")
+        self.assertEqual(self.w.api_calls(), [])
+
+    def test_api_only_after_raw_checks(self):
+        self.w.bonded_repo()
+        bid = self.post(PROJ)
+        lg_stub.CALLS.clear()
+        self.verify(bid)
+        urls = [u for u, _h in lg_stub.CALLS]
+        first_api = min(i for i, u in enumerate(urls) if u.startswith(API))
+        self.assertTrue(all(not u.startswith(API) for u in urls[:first_api]))
+        self.assertTrue(any(".licenseguard" in u for u in urls[:first_api]))
+        self.assertTrue(any(u.endswith("/LICENSE") for u in urls[:first_api]))
+
+
 class TestPostBond(unittest.TestCase):
     def setUp(self):
         self.w = World()
@@ -550,10 +719,15 @@ class TestPostBond(unittest.TestCase):
     def test_zero_value(self):
         self.assertEqual(self.post("acme/app", SHA_B, "MIT", value=0)["status"], "REJECTED")
 
-    def test_one_bond_per_repo(self):
+    def test_pending_bonds_do_not_reserve_the_repo(self):
         self.post("acme/app", SHA_B, "MIT")
+        self.assertEqual(self.post("ACME/App", SHA_B2, "MIT", who=PROJ2)["status"], "OK")
+
+    def test_one_verified_bond_per_repo(self):
+        self.w.bond()
         out = self.post("ACME/App", SHA_B2, "MIT", who=PROJ2)
         self.assertEqual(out["status"], "REJECTED")
+        self.assertIn("verified bond", out["reason"])
         self.assertEqual(self.w.owed(PROJ2), GEN)
 
     def test_other_repo_ok(self):
@@ -614,11 +788,13 @@ class TestVerifyBond(unittest.TestCase):
         self.assertEqual(int(self.w.c.held_wei), 0)
 
     def test_unknown_commit(self):
+        self.w.bonded_repo()
         self.w.gh.history("acme/app", SHA_B, http=404)
         bid = self.post()
         self.assertEqual(self.verify(bid)["reason"], "COMMIT_NOT_FOUND")
 
     def test_422_commit(self):
+        self.w.bonded_repo()
         self.w.gh.history("acme/app", SHA_B, http=422)
         bid = self.post()
         self.assertEqual(self.verify(bid)["reason"], "COMMIT_NOT_FOUND")

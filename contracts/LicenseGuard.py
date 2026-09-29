@@ -49,8 +49,9 @@ import typing
 #   D4. Nobody can choose a source that decides their own case. The copied
 #       file is read ONLY from the bonded repository at the bonded commit; the
 #       challenger names a path, never a location. The bonded commit must be in
-#       the bonded repository's default-branch history and carry a
-#       `.licenseguard` file naming the bonder, so nobody bonds a repository
+#       the bonded repository's default-branch history, and `.licenseguard`
+#       must name the bonder ON A LINE OF ITS OWN both at the bonded commit
+#       AND at the repository's current head, so nobody bonds a repository
 #       they do not control or a fork commit that GitHub merely serves through
 #       it. The original must be in ITS repository's default-branch history
 #       (fork-network commits are refused - measured, docs/PROBE.md), and its
@@ -97,7 +98,7 @@ import typing
 # The two header lines above are the whole of what GenVM reads before the code;
 # a third comment line there makes the contract undeployable.
 
-POLICY_VERSION = "1.1.0"
+POLICY_VERSION = "1.2.0"
 
 BPS = 10000
 DAY = 86400
@@ -211,6 +212,8 @@ THIRD_PARTY_NAMES = ("THIRD_PARTY_NOTICES", "THIRD_PARTY_NOTICES.md",
                      "THIRD_PARTY_NOTICES.txt")
 DIR_NOTICE_NAMES = ("LICENSE", "LICENSE.md", "LICENSE.txt", "NOTICE")
 MARKER_PATH = ".licenseguard"
+HEAD_REF = "HEAD"      # raw.githubusercontent.com/{repo}/HEAD/... = the default branch's head
+MAX_SUPERSEDE = 25     # PENDING rivals rejected in the activating call; the rest on touch
 
 RAW = "https://raw.githubusercontent.com/"
 API = "https://api.github.com/repos/"
@@ -1472,6 +1475,18 @@ def _agree_retry(lead: typing.Any, mine: typing.Any, facts: dict) -> bool:
 # --- bond verification (one consensus round, no model) ---------------------------
 
 
+def _names_bonder(text: str, owner: str) -> bool:
+    """`.licenseguard` names the bonder when one of its lines, trimmed and
+    case-folded, IS the bonder's address - not when the address merely occurs
+    somewhere in it (a file listing several addresses names each of them only
+    on its own line)."""
+    want = str(owner).strip().lower()
+    for line in text.split("\n"):
+        if line.strip().lower() == want:
+            return True
+    return False
+
+
 def _collect_bond(facts: dict) -> dict:
     """Is the bonded commit in the repository's default-branch history, does it
     carry `.licenseguard` naming the bonder, and which LICENSE file does it
@@ -1484,14 +1499,52 @@ def _collect_bond(facts: dict) -> dict:
            "commit_at": 0, "repo_created_at": 0, "doc_lines": "", "content_hash": ""}
 
     def done(verdict: str, reason: str) -> dict:
+        if verdict != B_ACTIVE:
+            out["license_path"] = ""
+            out["license_kinds"] = ""
+            out["commit_at"] = 0
+            out["repo_created_at"] = 0
         out["verdict"] = verdict
         out["reason"] = reason
         out["doc_lines"] = _lines(rd)
         out["content_hash"] = _hash(out["doc_lines"])
         return out
 
+    # 1-3. The cheap checks first, all on raw.githubusercontent.com (no API
+    # budget): a bond that cannot possibly verify is rejected before the
+    # validators' shared 60-requests-an-hour GitHub API is touched.
+    #
+    # 1. The bonded commit names the bonder (exact line).
+    st, body = _get(rd, "bonded:" + MARKER_PATH, _raw_url(repo, sha, MARKER_PATH))
+    if _transient(st):
+        return _retry(facts, "BONDED", MARKER_PATH + " answered " + str(st))
+    if st != 200:
+        return done(B_REJECTED, "NO_LICENSEGUARD_FILE")
+    text, state = _decode(body)
+    if state != "OK" or not _names_bonder(text, str(facts["owner"])):
+        return done(B_REJECTED, "LICENSEGUARD_FILE_DOES_NOT_NAME_BONDER")
+    # 2. CURRENT control: the repository's head names the bonder too. An old
+    #    commit naming a former maintainer stays in history forever; only the
+    #    head says who controls the repository now.
+    st, body = _get(rd, "bonded:HEAD:" + MARKER_PATH, _raw_url(repo, HEAD_REF, MARKER_PATH))
+    if _transient(st):
+        return _retry(facts, "BONDED", "HEAD " + MARKER_PATH + " answered " + str(st))
+    if st != 200:
+        return done(B_REJECTED, "CURRENT_HEAD_HAS_NO_LICENSEGUARD_FILE")
+    text, state = _decode(body)
+    if state != "OK" or not _names_bonder(text, str(facts["owner"])):
+        return done(B_REJECTED, "CURRENT_HEAD_DOES_NOT_NAME_BONDER")
+    # 3. A LICENSE file at the bonded commit.
+    lpath, ltext, r = _first_found(rd, "bonded", repo, sha, LICENSE_NAMES, "BONDED", facts)
+    if r is not None:
+        return r
+    if lpath == "":
+        return done(B_REJECTED, "NO_LICENSE_FILE")
+    out["license_path"] = lpath
+    out["license_kinds"] = ",".join(_license_kinds(ltext))
+    # 4. API: the bonded commit is in the default branch's history, and its date.
     st, fact = _get_api(rd, "bonded:history", API + repo + "/compare/" + sha
-                          + "...HEAD?per_page=1", _history_fact)
+                        + "...HEAD?per_page=1", _history_fact)
     if _transient(st):
         return _retry(facts, "BONDED", "GitHub compare API answered " + str(st))
     if _gone(st) or st == 422:
@@ -1504,9 +1557,9 @@ def _collect_bond(facts: dict) -> dict:
     committed = _commit_at(fact)
     if committed <= 0:
         return _retry(facts, "BONDED", "compare answer carried no commit date")
-    # The bonded commit's date is set by the bonded party. Floored at the
-    # repository's creation (GitHub's, uneditable), so backdating the commit
-    # cannot make every original look "newer than the copy".
+    # 5. API: the repository's creation, which floors the bonded commit's date
+    #    (set by the bonded party), so backdating the commit cannot make every
+    #    original look "newer than the copy".
     st, fact = _get_api(rd, "bonded:repo", API + repo, _created_fact)
     if _transient(st):
         return _retry(facts, "BONDED", "GitHub repository API answered " + str(st))
@@ -1515,21 +1568,6 @@ def _collect_bond(facts: dict) -> dict:
     created = _epoch_from_iso(fact)
     out["repo_created_at"] = created
     out["commit_at"] = committed if committed > created else created
-    st, body = _get(rd, "bonded:" + MARKER_PATH, _raw_url(repo, sha, MARKER_PATH))
-    if _transient(st):
-        return _retry(facts, "BONDED", MARKER_PATH + " answered " + str(st))
-    if st != 200:
-        return done(B_REJECTED, "NO_LICENSEGUARD_FILE")
-    text, state = _decode(body)
-    if state != "OK" or str(facts["owner"]).lower() not in text.lower():
-        return done(B_REJECTED, "LICENSEGUARD_FILE_DOES_NOT_NAME_BONDER")
-    lpath, ltext, r = _first_found(rd, "bonded", repo, sha, LICENSE_NAMES, "BONDED", facts)
-    if r is not None:
-        return r
-    if lpath == "":
-        return done(B_REJECTED, "NO_LICENSE_FILE")
-    out["license_path"] = lpath
-    out["license_kinds"] = ",".join(_license_kinds(ltext))
     return done(B_ACTIVE, "VERIFIED")
 
 
@@ -1710,7 +1748,9 @@ class LicenseGuard(gl.contract.Contract):
     # --- the register
     bonds: gl.storage.DynArray[Bond]
     challenges: gl.storage.DynArray[Challenge]
-    bond_by_repo: gl.storage.TreeMap[str, u32]
+    bond_by_repo: gl.storage.TreeMap[str, u32]          # the VERIFIED bond only
+    pending_by_repo: gl.storage.TreeMap[str, gl.storage.DynArray[u32]]
+    pending_cursor: gl.storage.TreeMap[str, u32]
     pair_used: gl.storage.TreeMap[str, u32]
     path_slashed: gl.storage.TreeMap[str, u256]
     challenges_by_bond: gl.storage.TreeMap[str, gl.storage.DynArray[u32]]
@@ -1901,6 +1941,49 @@ class LicenseGuard(gl.contract.Contract):
 
         return gl.vm.run_nondet(leader_fn, validator_fn)
 
+    def _slot_holder(self, key: str) -> typing.Any:
+        """The VERIFIED bond occupying a repository's slot, or None. A PENDING
+        bond never occupies it (no squatting)."""
+        b = self._bond(int(self.bond_by_repo.get(key) or 0))
+        if b is None:
+            return None
+        st = str(b.status)
+        if st == B_ACTIVE or st == B_NON_COMPLIANT:
+            return b
+        return None
+
+    def _reject_pending(self, b: typing.Any, reason: str) -> int:
+        """PENDING -> REJECTED, the whole bond back to the bonder's balance."""
+        amount = int(b.remaining_wei)
+        b.remaining_wei = u256(0)
+        b.status = B_REJECTED
+        b.verify_reason = reason
+        self._release(b.owner, amount)
+        return amount
+
+    def _supersede(self, key: str, winner: int) -> int:
+        """Reject and refund the other PENDING bonds on a repository that has
+        just been verified. At most MAX_SUPERSEDE per call, so a squatter who
+        posts thousands of pending bonds cannot make the owner's verification
+        too expensive to run; any left over are rejected the moment anyone
+        touches them (verify_bond / settle_stalled_bond), without a validator."""
+        arr = self.pending_by_repo.get(key)
+        if arr is None:
+            return 0
+        i = int(self.pending_cursor.get(key) or 0)
+        n = len(arr)
+        done = 0
+        scanned = 0
+        while i < n and done < MAX_SUPERSEDE and scanned < 4 * MAX_SUPERSEDE:
+            other = self._bond(int(arr[i]))
+            if other is not None and int(other.bond_id) != winner and str(other.status) == B_PENDING:
+                self._reject_pending(other, "SUPERSEDED_REPOSITORY_ALREADY_BONDED")
+                done += 1
+            i += 1
+            scanned += 1
+        self.pending_cursor[key] = u32(i)
+        return done
+
     def _holds(self, ch: typing.Any) -> bool:
         """Does challenge `ch` still hold its copied file (review finding A3)?
         While it is unjudged or under contest, yes; once it pays (or would
@@ -2006,11 +2089,18 @@ class LicenseGuard(gl.contract.Contract):
     def post_bond(self, repo: str, commit_sha: str, declared_licenses: str) -> typing.Any:
         """Post a compliance bond on one commit of one repository. The sender
         becomes the bonded party; the whole value sent is the bond (at least
-        `min_bond_wei`). One bond per repository at a time. The bond is
-        PENDING until `verify_bond` (permissionless) confirms, with GenLayer
-        validators, that the commit is in the repository's default-branch
-        history, carries a LICENSE file, and carries `.licenseguard` naming
-        this sender. Gated by pause (new business)."""
+        `min_bond_wei`). The bond is PENDING until `verify_bond`
+        (permissionless) confirms, with GenLayer validators, that
+        `.licenseguard` names this sender on a line of its own at the bonded
+        commit AND at the repository's current head, that the commit carries a
+        LICENSE file, and that it is in the default branch's history.
+
+        A PENDING bond reserves NOTHING: several may be pending on one
+        repository, so nobody can squat a repository they do not control. The
+        first to verify becomes ACTIVE and takes the repository's one slot;
+        every other PENDING bond on it is then rejected and refunded. Only a
+        verified bond (ACTIVE, or NON_COMPLIANT until withdrawn) occupies the
+        slot. Gated by pause (new business)."""
         value = self._bank()
         sender = gl.message.sender_address
         now = self._now()
@@ -2031,10 +2121,11 @@ class LicenseGuard(gl.contract.Contract):
             return self._refuse("the bond must be at least " + str(int(self.min_bond_wei))
                                 + " wei (" + _gen(int(self.min_bond_wei)) + " GEN)")
         key = name.lower()
-        held = int(self.bond_by_repo.get(key) or 0)
-        if held > 0:
-            return self._refuse(name + " already has bond #" + str(held)
-                                + "; one bond per repository at a time")
+        holder = self._slot_holder(key)
+        if holder is not None:
+            return self._refuse(name + " already has verified bond #"
+                                + str(int(holder.bond_id))
+                                + "; one verified bond per repository at a time")
         if not self._take(sender, value):
             return self._refuse("the bond could not be taken from this call's value")
         bid = len(self.bonds) + 1
@@ -2050,7 +2141,7 @@ class LicenseGuard(gl.contract.Contract):
         b.status = B_PENDING
         b.posted_at = u64(now)
         b.verify_deadline = u64(now + int(self.deadline_s))
-        self.bond_by_repo[key] = u32(bid)
+        self.pending_by_repo.get_or_insert_default(key).append(u32(bid))
         self.total_bonds = u256(int(self.total_bonds) + 1)
         return {"status": "OK", "bond_id": bid, "bond_status": B_PENDING,
                 "amount_wei": str(value),
@@ -2072,6 +2163,14 @@ class LicenseGuard(gl.contract.Contract):
                                 + "; nothing to verify")
         if now <= 0:
             return self._refuse("the block time was unreadable; retry")
+        holder = self._slot_holder(str(b.repo_key))
+        if holder is not None:
+            # Another bond on this repository verified first: this one can
+            # never become ACTIVE. Rejected and refunded, no validator asked.
+            amount = self._reject_pending(b, "SUPERSEDED_REPOSITORY_ALREADY_BONDED")
+            return {"status": "OK", "bond_id": int(b.bond_id), "outcome": B_REJECTED,
+                    "reason": str(b.verify_reason), "refunded_wei": str(amount),
+                    "claim_with": "claim()"}
         if now > int(b.verify_deadline):
             return self._refuse("bond #" + str(int(b.bond_id)) + " passed its "
                                 "verification deadline; call settle_stalled_bond")
@@ -2098,22 +2197,22 @@ class LicenseGuard(gl.contract.Contract):
             b.license_kinds = str(out["license_kinds"])
             b.commit_at = u64(int(out["commit_at"]))
             b.repo_created_at = u64(int(out["repo_created_at"]))
+            self.bond_by_repo[str(b.repo_key)] = u32(int(b.bond_id))
+            rejected = self._supersede(str(b.repo_key), int(b.bond_id))
             return {"status": "OK", "bond_id": int(b.bond_id), "outcome": B_ACTIVE,
                     "challenge_until": int(b.challenge_until),
-                    "license_path": str(b.license_path)}
-        amount = int(b.remaining_wei)
-        b.remaining_wei = u256(0)
-        b.status = B_REJECTED
-        self.bond_by_repo[str(b.repo_key)] = u32(0)
-        self._release(b.owner, amount)
+                    "license_path": str(b.license_path),
+                    "rival_pending_bonds_rejected": rejected}
+        amount = self._reject_pending(b, str(out["reason"]))
         return {"status": "OK", "bond_id": int(b.bond_id), "outcome": B_REJECTED,
                 "reason": str(out["reason"]), "refunded_wei": str(amount),
                 "claim_with": "claim()"}
 
     @gl.public.write
     def settle_stalled_bond(self, bond_id: typing.Any) -> typing.Any:
-        """D3. A bond nobody could verify before its deadline is REJECTED and
-        returned in full. Permissionless; works while paused."""
+        """D3. A bond nobody could verify before its deadline - or one whose
+        repository another bond has already verified (superseded) - is
+        REJECTED and returned in full. Permissionless; works while paused."""
         self._bank()
         now = self._now()
         b = self._bond(bond_id)
@@ -2122,15 +2221,15 @@ class LicenseGuard(gl.contract.Contract):
         if str(b.status) != B_PENDING:
             return self._refuse("bond #" + str(int(b.bond_id)) + " is " + str(b.status)
                                 + "; not stalled")
+        if self._slot_holder(str(b.repo_key)) is not None:
+            amount = self._reject_pending(b, "SUPERSEDED_REPOSITORY_ALREADY_BONDED")
+            return {"status": "OK", "bond_id": int(b.bond_id), "outcome": B_REJECTED,
+                    "reason": str(b.verify_reason), "refunded_wei": str(amount),
+                    "claim_with": "claim()"}
         if now <= 0 or now <= int(b.verify_deadline):
             return self._refuse("bond #" + str(int(b.bond_id)) + " can still be "
                                 "verified until " + str(int(b.verify_deadline)))
-        amount = int(b.remaining_wei)
-        b.remaining_wei = u256(0)
-        b.status = B_REJECTED
-        b.verify_reason = "VERIFICATION_DEADLINE_PASSED"
-        self.bond_by_repo[str(b.repo_key)] = u32(0)
-        self._release(b.owner, amount)
+        amount = self._reject_pending(b, "VERIFICATION_DEADLINE_PASSED")
         self.total_stalled = u256(int(self.total_stalled) + 1)
         return {"status": "OK", "bond_id": int(b.bond_id), "outcome": B_REJECTED,
                 "refunded_wei": str(amount), "claim_with": "claim()"}
@@ -2176,7 +2275,8 @@ class LicenseGuard(gl.contract.Contract):
         b.remaining_wei = u256(0)
         b.status = B_WITHDRAWN
         b.withdrawn_at = u64(now)
-        self.bond_by_repo[str(b.repo_key)] = u32(0)
+        if int(self.bond_by_repo.get(str(b.repo_key)) or 0) == int(b.bond_id):
+            self.bond_by_repo[str(b.repo_key)] = u32(0)
         self._release(b.owner, amount)
         return {"status": "OK", "bond_id": int(b.bond_id), "withdrawn_wei": str(amount),
                 "claim_with": "claim()"}

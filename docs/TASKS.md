@@ -73,3 +73,10 @@ Status legend: [ ] todo · [~] in progress · [x] done · [!] blocked (reason in
 - [!] "a real outage ending INCONCLUSIVE" on chain: not producible without degrading Studio Dev for others (shared API budget); shown with both sources unreadable instead, outage cases covered offline
 - [x] audit 44 PASS / 0 FAIL; README rules + limits rewritten (old private-repo escape removed); ATTACK_BRIEF updated
 - [x] ~/Desktop/licenseguard-addresses.txt; pushed; GitHub bytes == chain bytes
+
+## Identity fixes (round 2)
+- [ ] 1 no squatting: post_bond reserves nothing; several PENDING per repo; first verified wins; other PENDING rejected + refunded
+- [ ] 2 current control: `.licenseguard` must name the bonder at the bonded commit AND at raw .../HEAD/.licenseguard
+- [ ] 3 exact line match (trimmed, case-insensitive); raw checks before any API call
+- [ ] fixtures re-committed with the exact-line marker format
+- [ ] tests; redeploy x3; byte-for-byte; reseed incl. squatter; drain 0; audit; README; addresses; push

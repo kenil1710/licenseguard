@@ -67,6 +67,8 @@ def lifecycle(seed: int, steps: int = 160):
         flake()
         if op < 0.10:
             owner, repo, sha = rng.choice(PROJECTS)
+            if rng.random() < 0.3:
+                owner = OUTSIDER                             # a squatter on someone else's repo
             out = w.call(owner, "post_bond", repo, sha, "MIT", value=rng.choice([GEN - 1, GEN, 2 * GEN]))
             if out["status"] == "OK":
                 bonds.append(out["bond_id"])
@@ -210,6 +212,10 @@ class TestRandomCoverage(unittest.TestCase):
     def test_contests_held_and_dropped(self):
         self.assertIn("HELD", self.contests)
         self.assertIn("DROPPED_AT_DEADLINE", self.contests)
+
+    def test_squatters_superseded_or_rejected(self):
+        self.assertTrue({"SUPERSEDED_REPOSITORY_ALREADY_BONDED",
+                         "LICENSEGUARD_FILE_DOES_NOT_NAME_BONDER"} & self.bond_states)
 
     def test_bonds_verified_and_stalled_and_slashed(self):
         self.assertIn("VERIFIED", self.bond_states)
