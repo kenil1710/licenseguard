@@ -1,0 +1,1147 @@
+{
+  "started_at": "2026-09-29T17:16:51.391Z",
+  "lanes": {
+    "A": {
+      "contract": "LicenseGuardDemo",
+      "address": "0x22C26ADFA8367314aC0E9764c2439d44CfcE08eC",
+      "steps": [
+        {
+          "label": "post_bond stripped",
+          "role": "proj1",
+          "from": "0x0074C5fAb4dCCd5666cDFd9e3E187Cd766617b70",
+          "fn": "post_bond",
+          "args": [
+            "kenil1710/licenseguard-fixture-stripped",
+            "9c3bce920042fc5ca0b4219b84ed725370e5d13f",
+            "MIT"
+          ],
+          "value_wei": "1000000000000000000",
+          "tx": "0x97e439b778b6711657b4276b7f174093b6f94056e2c1115615410905862ff33b",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 16.687,
+          "returned": {
+            "amount_wei": "1000000000000000000",
+            "bond_id": 1,
+            "bond_status": "PENDING",
+            "next": "verify_bond(1) - anyone may call it",
+            "status": "OK"
+          },
+          "failure": null
+        },
+        {
+          "label": "post_bond attributed",
+          "role": "proj2",
+          "from": "0xfa810A21439edcEAAd527fE4C781e0b15203f937",
+          "fn": "post_bond",
+          "args": [
+            "kenil1710/licenseguard-fixture-attributed",
+            "b26192a8e7df4495e9092724610fa30e7c5bb21a",
+            "MIT"
+          ],
+          "value_wei": "1000000000000000000",
+          "tx": "0x70d8d11c0632ea7fe5098048e5e360e24c646ce73eec45109ea8ce04e42bf86a",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 11.634,
+          "returned": {
+            "amount_wei": "1000000000000000000",
+            "bond_id": 2,
+            "bond_status": "PENDING",
+            "next": "verify_bond(2) - anyone may call it",
+            "status": "OK"
+          },
+          "failure": null
+        },
+        {
+          "label": "verify_bond stripped",
+          "role": "trigger",
+          "from": "0xBC9e0EC78E6dE6624AD4A61Fac30459B24F149a2",
+          "fn": "verify_bond",
+          "args": [
+            1
+          ],
+          "value_wei": "0",
+          "tx": "0x52d0dbfcf7941dce5eba0e7d41c9208435303b1b0abc1e9ca2918b5b8835fb50",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 57.129,
+          "returned": {
+            "bond_id": 1,
+            "challenge_until": 1790703150,
+            "license_path": "LICENSE",
+            "outcome": "ACTIVE",
+            "status": "OK"
+          },
+          "failure": null
+        },
+        {
+          "label": "verify_bond attributed",
+          "role": "trigger",
+          "from": "0xBC9e0EC78E6dE6624AD4A61Fac30459B24F149a2",
+          "fn": "verify_bond",
+          "args": [
+            2
+          ],
+          "value_wei": "0",
+          "tx": "0x737fbf402dcf8c62fcd16c6f51945cdb88aec5aae284e61d227b0f3d9074a2fa",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 19.959,
+          "returned": {
+            "bond_id": 2,
+            "challenge_until": 1790703207,
+            "license_path": "LICENSE",
+            "outcome": "ACTIVE",
+            "status": "OK"
+          },
+          "failure": null
+        },
+        {
+          "label": "challenge stripped copy",
+          "role": "chal1",
+          "from": "0x9Eb95D159054348ebb77Dc8a2592ABB5Cff288a1",
+          "fn": "challenge",
+          "args": [
+            1,
+            "sindresorhus/slugify",
+            "3b17b2e84b97624a683aafaa38184bf2746fab22",
+            "index.js",
+            "src/slugify.js",
+            "MIT"
+          ],
+          "value_wei": "200000000000000000",
+          "tx": "0xc75727f6b8af71373c2bfe220cf7bdbc60a2c44d9effb6b83671a4300d32581b",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 12.033,
+          "returned": {
+            "bond_id": 1,
+            "challenge_id": 1,
+            "judge_deadline": 1790702747,
+            "next": "judge(1) - anyone may call it",
+            "status": "OK"
+          },
+          "failure": null
+        },
+        {
+          "label": "challenge attributed copy",
+          "role": "chal2",
+          "from": "0x775859F233E39A171BCE2f06a907Ab4bB3350ED5",
+          "fn": "challenge",
+          "args": [
+            2,
+            "sindresorhus/slugify",
+            "3b17b2e84b97624a683aafaa38184bf2746fab22",
+            "index.js",
+            "vendor/slugify.js",
+            "MIT"
+          ],
+          "value_wei": "200000000000000000",
+          "tx": "0xc30e72637abe6a193088c4f81024ea3d7979247f942d33b6fc082257adf20486",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 11.892,
+          "returned": {
+            "bond_id": 2,
+            "challenge_id": 2,
+            "judge_deadline": 1790702759,
+            "next": "judge(2) - anyone may call it",
+            "status": "OK"
+          },
+          "failure": null
+        },
+        {
+          "label": "challenge unrelated file",
+          "role": "chal1",
+          "from": "0x9Eb95D159054348ebb77Dc8a2592ABB5Cff288a1",
+          "fn": "challenge",
+          "args": [
+            2,
+            "sindresorhus/slugify",
+            "3b17b2e84b97624a683aafaa38184bf2746fab22",
+            "index.js",
+            "src/app.js",
+            "MIT"
+          ],
+          "value_wei": "200000000000000000",
+          "tx": "0x138ad5f221b7c36373208c27e87bab3ad96edb27e904654c52725eb81b47eced",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 18.393,
+          "returned": {
+            "bond_id": 2,
+            "challenge_id": 3,
+            "judge_deadline": 1790702771,
+            "next": "judge(3) - anyone may call it",
+            "status": "OK"
+          },
+          "failure": null
+        },
+        {
+          "label": "REFUSAL: path outside bonded repo",
+          "role": "chal2",
+          "from": "0x775859F233E39A171BCE2f06a907Ab4bB3350ED5",
+          "fn": "challenge",
+          "args": [
+            1,
+            "sindresorhus/slugify",
+            "3b17b2e84b97624a683aafaa38184bf2746fab22",
+            "index.js",
+            "../../evil/other/src/slugify.js",
+            "MIT"
+          ],
+          "value_wei": "200000000000000000",
+          "tx": "0xbeb2bb82c6b1bcb0a9c857922dfedcb5036ba92e5f6154c59d62385b5d07a977",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 11.568,
+          "returned": {
+            "claim_with": "claim()",
+            "reason": "copied path has an empty, '.' or '..' segment: ../../evil/other/src/slugify.js",
+            "refunded_wei": "200000000000000000",
+            "status": "REJECTED"
+          },
+          "failure": null
+        },
+        {
+          "label": "REFUSAL: duplicate pair (refile)",
+          "role": "chal2",
+          "from": "0x775859F233E39A171BCE2f06a907Ab4bB3350ED5",
+          "fn": "challenge",
+          "args": [
+            1,
+            "sindresorhus/slugify",
+            "0000000000000000000000000000000000000000",
+            "index.js",
+            "src/slugify.js",
+            "APACHE_2"
+          ],
+          "value_wei": "200000000000000000",
+          "tx": "0x110d70ba968815f9a9e70cf24963c296d0c1a088091ef9a85a7083b14a328295",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 11.901,
+          "returned": {
+            "claim_with": "claim()",
+            "reason": "this file pair was already challenged on bond #1 (challenge #1); no refiles",
+            "refunded_wei": "200000000000000000",
+            "status": "REJECTED"
+          },
+          "failure": null
+        },
+        {
+          "label": "judge stripped",
+          "role": "trigger",
+          "from": "0xBC9e0EC78E6dE6624AD4A61Fac30459B24F149a2",
+          "fn": "judge",
+          "args": [
+            1
+          ],
+          "value_wei": "0",
+          "tx": "0x88244afcc504b5acaf87dedfe83a440174af6e857dd865802093bdf1fcc325ca",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 14.241,
+          "returned": {
+            "challenge_id": 1,
+            "content_hash": "af8b5b6922c25512c905410766332101b054187ebb929d30574c32e9afcc06cd",
+            "contest_until": 1790702575,
+            "model_called": false,
+            "outcome": "ATTRIBUTION_MISSING",
+            "reason": "NO_ATTRIBUTION_FOUND",
+            "similarity_bps": 10000,
+            "status": "OK"
+          },
+          "failure": null
+        },
+        {
+          "label": "judge attributed",
+          "role": "trigger",
+          "from": "0xBC9e0EC78E6dE6624AD4A61Fac30459B24F149a2",
+          "fn": "judge",
+          "args": [
+            2
+          ],
+          "value_wei": "0",
+          "tx": "0xeaf95fc4fa8c2cc55ec8ba81b2c6b0458541dcd6cf25f5e19f4bd305de7c8c40",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 28.313,
+          "returned": {
+            "challenge_id": 2,
+            "content_hash": "1a2b838d1501d7e17e02e14f79e8232dfbd346b111b5dcb8656a12aa28df8303",
+            "contest_until": 1790702592,
+            "model_called": true,
+            "outcome": "COMPLIANT",
+            "reason": "ATTRIBUTION_MEETS_LICENSE",
+            "similarity_bps": 10000,
+            "status": "OK"
+          },
+          "failure": null
+        },
+        {
+          "label": "judge unrelated",
+          "role": "trigger",
+          "from": "0xBC9e0EC78E6dE6624AD4A61Fac30459B24F149a2",
+          "fn": "judge",
+          "args": [
+            3
+          ],
+          "value_wei": "0",
+          "tx": "0xc158b4bb5651cc34a3b8dbc1615e9c8dffea09a68ef3793838efc33a29251dcd",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 18.835,
+          "returned": {
+            "challenge_id": 3,
+            "content_hash": "9262f319b9004538af1b7697abd2ed45b45b8a5e9f0e5bc1e17e11e87fca0c54",
+            "contest_until": 1790702616,
+            "model_called": false,
+            "outcome": "NOT_DERIVED",
+            "reason": "BELOW_SIMILARITY_THRESHOLD",
+            "similarity_bps": 263,
+            "status": "OK"
+          },
+          "failure": null
+        },
+        {
+          "label": "contest NOT_DERIVED (challenger)",
+          "role": "chal1",
+          "from": "0x9Eb95D159054348ebb77Dc8a2592ABB5Cff288a1",
+          "fn": "contest",
+          "args": [
+            3
+          ],
+          "value_wei": "100000000000000000",
+          "tx": "0x44623655e8dbe20a27ca3ab3abc4f21961f3b4b0e3370ef2a2dba3169c12a063",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 12,
+          "returned": {
+            "challenge_id": 3,
+            "contest_deadline": 1790702874,
+            "next": "judge(3) re-reads the same pinned files",
+            "side": "CHALLENGER",
+            "status": "OK"
+          },
+          "failure": null
+        },
+        {
+          "label": "judge contest re-read",
+          "role": "trigger",
+          "from": "0xBC9e0EC78E6dE6624AD4A61Fac30459B24F149a2",
+          "fn": "judge",
+          "args": [
+            3
+          ],
+          "value_wei": "0",
+          "tx": "0xc942da485d72cc430de250ffe7bfd829ec476ed44e3d927da24b296f686c9409",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 18.414,
+          "returned": {
+            "challenge_id": 3,
+            "contest": "HELD",
+            "contest_until": 1790702648,
+            "outcome": "NOT_DERIVED",
+            "reason": "BELOW_SIMILARITY_THRESHOLD",
+            "status": "OK"
+          },
+          "failure": null
+        },
+        {
+          "label": "finalize #1 (ATTRIBUTION_MISSING)",
+          "role": "trigger",
+          "from": "0xBC9e0EC78E6dE6624AD4A61Fac30459B24F149a2",
+          "fn": "finalize",
+          "args": [
+            1
+          ],
+          "value_wei": "0",
+          "tx": "0xb4aa708fc902f3016146b8206a909c74c07b4b48adc3d2be52e7c8acee57ee86",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 11.52,
+          "returned": {
+            "bond_status": "NON_COMPLIANT",
+            "challenge_id": 1,
+            "claim_with": "claim()",
+            "outcome": "ATTRIBUTION_MISSING",
+            "paid_challenger_wei": "700000000000000000",
+            "paid_project_wei": "0",
+            "status": "OK"
+          },
+          "failure": null
+        },
+        {
+          "label": "finalize #2 (COMPLIANT)",
+          "role": "trigger",
+          "from": "0xBC9e0EC78E6dE6624AD4A61Fac30459B24F149a2",
+          "fn": "finalize",
+          "args": [
+            2
+          ],
+          "value_wei": "0",
+          "tx": "0x0bafd6bddac751e929c72d2ee9ba8674b7de79c3dd2e02b60514840ceed57f0e",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 13.283,
+          "returned": {
+            "bond_status": "ACTIVE",
+            "challenge_id": 2,
+            "claim_with": "claim()",
+            "outcome": "COMPLIANT",
+            "paid_challenger_wei": "0",
+            "paid_project_wei": "200000000000000000",
+            "status": "OK"
+          },
+          "failure": null
+        },
+        {
+          "label": "finalize #3 (NOT_DERIVED)",
+          "role": "trigger",
+          "from": "0xBC9e0EC78E6dE6624AD4A61Fac30459B24F149a2",
+          "fn": "finalize",
+          "args": [
+            3
+          ],
+          "value_wei": "0",
+          "tx": "0x85000bde7dd7ec52b4f962f2425412dc9143f050f0f90be44b325177561825c2",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 13.289,
+          "returned": {
+            "bond_status": "ACTIVE",
+            "challenge_id": 3,
+            "claim_with": "claim()",
+            "outcome": "NOT_DERIVED",
+            "paid_challenger_wei": "0",
+            "paid_project_wei": "200000000000000000",
+            "status": "OK"
+          },
+          "failure": null
+        },
+        {
+          "label": "withdraw_bond #1",
+          "role": "proj1",
+          "from": "0x0074C5fAb4dCCd5666cDFd9e3E187Cd766617b70",
+          "fn": "withdraw_bond",
+          "args": [
+            1
+          ],
+          "value_wei": "0",
+          "tx": "0x3f0fa7b12dbb4f30855db290e2d524e2476e5f217632bb732ea4dfe192e62bdf",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 13.624,
+          "returned": {
+            "bond_id": 1,
+            "claim_with": "claim()",
+            "status": "OK",
+            "withdrawn_wei": "500000000000000000"
+          },
+          "failure": null
+        },
+        {
+          "label": "withdraw_bond #2",
+          "role": "proj2",
+          "from": "0xfa810A21439edcEAAd527fE4C781e0b15203f937",
+          "fn": "withdraw_bond",
+          "args": [
+            2
+          ],
+          "value_wei": "0",
+          "tx": "0x79ecac02593835c68173bcda346f9884a1fb07526ed45ff40cf246b45f4b4105",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 13.775,
+          "returned": {
+            "bond_id": 2,
+            "claim_with": "claim()",
+            "status": "OK",
+            "withdrawn_wei": "1000000000000000000"
+          },
+          "failure": null
+        },
+        {
+          "label": "claim proj1 (0.500000 GEN)",
+          "role": "proj1",
+          "from": "0x0074C5fAb4dCCd5666cDFd9e3E187Cd766617b70",
+          "fn": "claim",
+          "args": [],
+          "value_wei": "0",
+          "tx": "0xb1da8a28010638b2a358944c909688c489355ebe363b53d406830803b1b33965",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 12.589,
+          "returned": {
+            "paid_gen": "0.5",
+            "paid_wei": "500000000000000000",
+            "status": "OK"
+          },
+          "failure": null
+        },
+        {
+          "label": "claim proj2 (1.500000 GEN)",
+          "role": "proj2",
+          "from": "0xfa810A21439edcEAAd527fE4C781e0b15203f937",
+          "fn": "claim",
+          "args": [],
+          "value_wei": "0",
+          "tx": "0xdd923fe971d1af88d9563fd1ea522ea71e058527ae1a3b4f31f744161349f910",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 19.243,
+          "returned": {
+            "paid_gen": "1.5",
+            "paid_wei": "1500000000000000000",
+            "status": "OK"
+          },
+          "failure": null
+        },
+        {
+          "label": "claim chal1 (0.700000 GEN)",
+          "role": "chal1",
+          "from": "0x9Eb95D159054348ebb77Dc8a2592ABB5Cff288a1",
+          "fn": "claim",
+          "args": [],
+          "value_wei": "0",
+          "tx": "0xa06488619cda9850220f98ba12bb3bbb5cc21595d043ffca211eee960ce7ade8",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 11.88,
+          "returned": {
+            "paid_gen": "0.7",
+            "paid_wei": "700000000000000000",
+            "status": "OK"
+          },
+          "failure": null
+        },
+        {
+          "label": "claim chal2 (0.400000 GEN)",
+          "role": "chal2",
+          "from": "0x775859F233E39A171BCE2f06a907Ab4bB3350ED5",
+          "fn": "claim",
+          "args": [],
+          "value_wei": "0",
+          "tx": "0x07f27e5c5ec98dc4cf7b0c255e9eb3b9167e7d2e518ea1b960b872c09933562b",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 10.696,
+          "returned": {
+            "paid_gen": "0.4",
+            "paid_wei": "400000000000000000",
+            "status": "OK"
+          },
+          "failure": null
+        }
+      ],
+      "final": {
+        "stats": {
+          "balance_wei": "0",
+          "bonds": 2,
+          "books_zero": true,
+          "challenges": 3,
+          "held_in_bonds_wei": "0",
+          "held_in_challenges_wei": "0",
+          "held_wei": "0",
+          "ledger_ok": true,
+          "paused": false,
+          "payable_wei": "0",
+          "total_bonds": 2,
+          "total_challenges": 3,
+          "total_claimed_wei": "3100000000000000000",
+          "total_contests": 1,
+          "total_finalized": 3,
+          "total_judgements": 4,
+          "total_rejected": 2,
+          "total_retries": 0,
+          "total_stalled": 0
+        },
+        "challenges": [
+          {
+            "attempts": 1,
+            "bond_id": 1,
+            "bond_wei": "0",
+            "challenge_id": 1,
+            "challenger": "0x9Eb95D159054348ebb77Dc8a2592ABB5Cff288a1",
+            "challenger_contested": false,
+            "content_hash": "af8b5b6922c25512c905410766332101b054187ebb929d30574c32e9afcc06cd",
+            "contest_bond_wei": "0",
+            "contest_deadline": 0,
+            "contest_log": "",
+            "contest_side": "",
+            "contest_until": 1790702575,
+            "copied_file": "OK",
+            "copied_path": "src/slugify.js",
+            "copyright_lines": "copyright c sindre sorhus sindresorhus gmail com https sindresorhus com",
+            "doc_lines": "bonded:LICENSE 200 1066 9f9bb4f0f8f218c144087341d2ca0c0a67ad88f64fe621de1dc3b0e1e72dde42\noriginal:file 200 5893 65f19dcf087db337e168a80aa4258be749a690ccb6ff96f961156531815b8d74\nbonded:file 200 5893 65f19dcf087db337e168a80aa4258be749a690ccb6ff96f961156531815b8d74\noriginal:LICENSE 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed\noriginal:LICENSE.md 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed\noriginal:LICENSE.txt 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed\noriginal:license 200 1117 5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3\noriginal:NOTICE 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed\noriginal:NOTICE.md 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed\noriginal:NOTICE.txt 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed\nbonded:LICENSE 200 1066 9f9bb4f0f8f218c144087341d2ca0c0a67ad88f64fe621de1dc3b0e1e72dde42\nbonded:NOTICE 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed\nbonded:NOTICE.md 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed\nbonded:NOTICE.txt 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed\nbonded:THIRD_PARTY_NOTICES 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed\nbonded:THIRD_PARTY_NOTICES.md 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed\nbonded:THIRD_PARTY_NOTICES.txt 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed\nbonded:src/LICENSE 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed\nbonded:src/LICENSE.md 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed\nbonded:src/LICENSE.txt 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed\nbonded:src/NOTICE 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed\noriginal:repo 200 api 9bb59f7789a5d59c02d97b1c9fcf8b1cfd431db8e3ba42a5de371c16169b9ab4\noriginal:history 200 api 932a8be122b04abff46d0754ac91d37650d9b185ffedecda64b9f38a0b17f8a3",
+            "facts_hash": "15c678106cf4fd06e8f4722e5b001709cdc4c8221c34702ace561e63c034e50e",
+            "filed_at": 1790702327,
+            "finalized_at": 1790702598,
+            "found": true,
+            "holder_in_copy": false,
+            "holder_in_notices": false,
+            "holders": "sindre sorhus",
+            "judge_deadline": 1790702747,
+            "judged_at": 1790702395,
+            "last_retry_side": "",
+            "last_retry_why": "",
+            "license": "MIT",
+            "licenses_found": "MIT",
+            "meets": "",
+            "missing": "",
+            "model_called": false,
+            "notice_files": "LICENSE",
+            "origin": "OK",
+            "origin_created_at": 1524065687,
+            "original_file": "OK",
+            "original_path": "index.js",
+            "original_repo": "sindresorhus/slugify",
+            "original_sha": "3b17b2e84b97624a683aafaa38184bf2746fab22",
+            "outcome": "ATTRIBUTION_MISSING",
+            "paid_challenger_wei": "700000000000000000",
+            "paid_project_wei": "0",
+            "project_contested": false,
+            "reason": "NO_ATTRIBUTION_FOUND",
+            "shingles_common": 1000,
+            "shingles_copied": 1000,
+            "shingles_original": 1000,
+            "similarity_bps": 10000,
+            "slash_wei": "500000000000000000",
+            "status": "FINAL",
+            "verify": {
+              "consistent": true,
+              "content_hash_ok": true,
+              "documents": 23,
+              "facts_hash_ok": true,
+              "found": true,
+              "judged": true,
+              "model_only_where_needed": true,
+              "outcome_ok": true,
+              "recomputed_outcome": "ATTRIBUTION_MISSING",
+              "recomputed_reason": "NO_ATTRIBUTION_FOUND",
+              "recomputed_similarity_bps": 10000,
+              "similarity_ok": true
+            }
+          },
+          {
+            "attempts": 1,
+            "bond_id": 2,
+            "bond_wei": "0",
+            "challenge_id": 2,
+            "challenger": "0x775859F233E39A171BCE2f06a907Ab4bB3350ED5",
+            "challenger_contested": false,
+            "content_hash": "1a2b838d1501d7e17e02e14f79e8232dfbd346b111b5dcb8656a12aa28df8303",
+            "contest_bond_wei": "0",
+            "contest_deadline": 0,
+            "contest_log": "",
+            "contest_side": "",
+            "contest_until": 1790702592,
+            "copied_file": "OK",
+            "copied_path": "vendor/slugify.js",
+            "copyright_lines": "copyright c sindre sorhus sindresorhus gmail com https sindresorhus com",
+            "doc_lines": "bonded:LICENSE 200 1066 9f9bb4f0f8f218c144087341d2ca0c0a67ad88f64fe621de1dc3b0e1e72dde42\noriginal:file 200 5893 65f19dcf087db337e168a80aa4258be749a690ccb6ff96f961156531815b8d74\nbonded:file 200 7161 16a27dd64ad0090268b588f4feca6f1cd6493c660c686d5cb560de1e36ba4397\noriginal:LICENSE 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed\noriginal:LICENSE.md 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed\noriginal:LICENSE.txt 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed\noriginal:license 200 1117 5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3\noriginal:NOTICE 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed\noriginal:NOTICE.md 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed\noriginal:NOTICE.txt 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed\nbonded:LICENSE 200 1066 9f9bb4f0f8f218c144087341d2ca0c0a67ad88f64fe621de1dc3b0e1e72dde42\nbonded:NOTICE 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed\nbonded:NOTICE.md 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed\nbonded:NOTICE.txt 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed\nbonded:THIRD_PARTY_NOTICES 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed\nbonded:THIRD_PARTY_NOTICES.md 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed\nbonded:THIRD_PARTY_NOTICES.txt 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed\nbonded:vendor/LICENSE 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed\nbonded:vendor/LICENSE.md 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed\nbonded:vendor/LICENSE.txt 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed\nbonded:vendor/NOTICE 404 14 d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed",
+            "facts_hash": "a3f91137911862ab9b8c0f53e6a30d63cca84494d61192eb564c74a96fc8ca87",
+            "filed_at": 1790702339,
+            "finalized_at": 1790702617,
+            "found": true,
+            "holder_in_copy": true,
+            "holder_in_notices": false,
+            "holders": "sindre sorhus",
+            "judge_deadline": 1790702759,
+            "judged_at": 1790702412,
+            "last_retry_side": "",
+            "last_retry_why": "",
+            "license": "MIT",
+            "licenses_found": "MIT",
+            "meets": "YES",
+            "missing": "NONE",
+            "model_called": true,
+            "notice_files": "LICENSE",
+            "origin": "UNCHECKED",
+            "origin_created_at": 0,
+            "original_file": "OK",
+            "original_path": "index.js",
+            "original_repo": "sindresorhus/slugify",
+            "original_sha": "3b17b2e84b97624a683aafaa38184bf2746fab22",
+            "outcome": "COMPLIANT",
+            "paid_challenger_wei": "0",
+            "paid_project_wei": "200000000000000000",
+            "project_contested": false,
+            "reason": "ATTRIBUTION_MEETS_LICENSE",
+            "shingles_common": 1000,
+            "shingles_copied": 1000,
+            "shingles_original": 1000,
+            "similarity_bps": 10000,
+            "slash_wei": "0",
+            "status": "FINAL",
+            "verify": {
+              "consistent": true,
+              "content_hash_ok": true,
+              "documents": 21,
+              "facts_hash_ok": true,
+              "found": true,
+              "judged": true,
+              "model_only_where_needed": true,
+              "outcome_ok": true,
+              "recomputed_outcome": "COMPLIANT",
+              "recomputed_reason": "ATTRIBUTION_MEETS_LICENSE",
+              "recomputed_similarity_bps": 10000,
+              "similarity_ok": true
+            }
+          },
+          {
+            "attempts": 2,
+            "bond_id": 2,
+            "bond_wei": "0",
+            "challenge_id": 3,
+            "challenger": "0x9Eb95D159054348ebb77Dc8a2592ABB5Cff288a1",
+            "challenger_contested": true,
+            "content_hash": "9262f319b9004538af1b7697abd2ed45b45b8a5e9f0e5bc1e17e11e87fca0c54",
+            "contest_bond_wei": "0",
+            "contest_deadline": 1790702874,
+            "contest_log": "CHALLENGER:NOT_DERIVED->NOT_DERIVED:HELD",
+            "contest_side": "",
+            "contest_until": 1790702648,
+            "copied_file": "OK",
+            "copied_path": "src/app.js",
+            "copyright_lines": "",
+            "doc_lines": "bonded:LICENSE 200 1066 9f9bb4f0f8f218c144087341d2ca0c0a67ad88f64fe621de1dc3b0e1e72dde42\noriginal:file 200 5893 65f19dcf087db337e168a80aa4258be749a690ccb6ff96f961156531815b8d74\nbonded:file 200 830 a178c8269c79d6cbec6b362e8736b920fba8a0cf3c6f1f827e715920aac09bfb",
+            "facts_hash": "6a71ede76afe4e05890f60661fbd965901653a750b961ccf86fbf7ee43085f48",
+            "filed_at": 1790702351,
+            "finalized_at": 1790702673,
+            "found": true,
+            "holder_in_copy": false,
+            "holder_in_notices": false,
+            "holders": "",
+            "judge_deadline": 1790702771,
+            "judged_at": 1790702436,
+            "last_retry_side": "",
+            "last_retry_why": "",
+            "license": "MIT",
+            "licenses_found": "",
+            "meets": "",
+            "missing": "",
+            "model_called": false,
+            "notice_files": "",
+            "origin": "UNCHECKED",
+            "origin_created_at": 0,
+            "original_file": "OK",
+            "original_path": "index.js",
+            "original_repo": "sindresorhus/slugify",
+            "original_sha": "3b17b2e84b97624a683aafaa38184bf2746fab22",
+            "outcome": "NOT_DERIVED",
+            "paid_challenger_wei": "0",
+            "paid_project_wei": "200000000000000000",
+            "project_contested": false,
+            "reason": "BELOW_SIMILARITY_THRESHOLD",
+            "shingles_common": 7,
+            "shingles_copied": 266,
+            "shingles_original": 1000,
+            "similarity_bps": 263,
+            "slash_wei": "0",
+            "status": "FINAL",
+            "verify": {
+              "consistent": true,
+              "content_hash_ok": true,
+              "documents": 3,
+              "facts_hash_ok": true,
+              "found": true,
+              "judged": true,
+              "model_only_where_needed": true,
+              "outcome_ok": true,
+              "recomputed_outcome": "NOT_DERIVED",
+              "recomputed_reason": "BELOW_SIMILARITY_THRESHOLD",
+              "recomputed_similarity_bps": 263,
+              "similarity_ok": true
+            }
+          }
+        ],
+        "bonds": [
+          {
+            "amount_wei": "1000000000000000000",
+            "bond_id": 1,
+            "challenge_until": 1790703150,
+            "commit_sha": "9c3bce920042fc5ca0b4219b84ed725370e5d13f",
+            "declared_licenses": "MIT",
+            "found": true,
+            "found_non_compliant": true,
+            "last_closed_at": 1790702598,
+            "license_kinds": "MIT",
+            "license_path": "LICENSE",
+            "open_challenges": 0,
+            "owner": "0x0074C5fAb4dCCd5666cDFd9e3E187Cd766617b70",
+            "posted_at": 1790702220,
+            "remaining_wei": "0",
+            "repo": "kenil1710/licenseguard-fixture-stripped",
+            "slashed_wei": "500000000000000000",
+            "status": "WITHDRAWN",
+            "total_challenges": 1,
+            "unbond_delay_s": 60,
+            "unreadable": false,
+            "verified_at": 1790702250,
+            "verify_attempts": 1,
+            "verify_deadline": 1790702640,
+            "verify_docs": "bonded:history 200 api 932a8be122b04abff46d0754ac91d37650d9b185ffedecda64b9f38a0b17f8a3\nbonded:.licenseguard 200 64 1bebad5902d7e593336440de287ec27d4019b8d4be0baa8babaee8b9b90180be\nbonded:LICENSE 200 1066 9f9bb4f0f8f218c144087341d2ca0c0a67ad88f64fe621de1dc3b0e1e72dde42",
+            "verify_hash": "e1f07cf2009255c0b325479d715afa2e5a8045ddc60bd3ca18b6fd15cc87a591",
+            "verify_reason": "VERIFIED",
+            "withdrawn_at": 1790703176
+          },
+          {
+            "amount_wei": "1000000000000000000",
+            "bond_id": 2,
+            "challenge_until": 1790703207,
+            "commit_sha": "b26192a8e7df4495e9092724610fa30e7c5bb21a",
+            "declared_licenses": "MIT",
+            "found": true,
+            "found_non_compliant": false,
+            "last_closed_at": 1790702673,
+            "license_kinds": "MIT",
+            "license_path": "LICENSE",
+            "open_challenges": 0,
+            "owner": "0xfa810A21439edcEAAd527fE4C781e0b15203f937",
+            "posted_at": 1790702237,
+            "remaining_wei": "0",
+            "repo": "kenil1710/licenseguard-fixture-attributed",
+            "slashed_wei": "0",
+            "status": "WITHDRAWN",
+            "total_challenges": 2,
+            "unbond_delay_s": 60,
+            "unreadable": false,
+            "verified_at": 1790702307,
+            "verify_attempts": 1,
+            "verify_deadline": 1790702657,
+            "verify_docs": "bonded:history 200 api 932a8be122b04abff46d0754ac91d37650d9b185ffedecda64b9f38a0b17f8a3\nbonded:.licenseguard 200 64 d081cfbc8612ed8a3aa64a7dd46c2d8f52b0c3de34e9597cc1e6f0427bd795ce\nbonded:LICENSE 200 1066 9f9bb4f0f8f218c144087341d2ca0c0a67ad88f64fe621de1dc3b0e1e72dde42",
+            "verify_hash": "bc62e781ce6124462275d2b6c94a60dc3bf5ab4acf579ee0cf1789ce259e329c",
+            "verify_reason": "VERIFIED",
+            "withdrawn_at": 1790703233
+          }
+        ]
+      }
+    },
+    "B": {
+      "contract": "LicenseGuardDemoStall",
+      "address": "0x7AA93E3649cdC07E3bFB9d9dF83a6F8E0195A0Df",
+      "steps": [
+        {
+          "label": "post_bond vanishing",
+          "role": "proj3",
+          "from": "0x98322C3c8247D7E2791910B6E7D10E8fEB4Bb0cA",
+          "fn": "post_bond",
+          "args": [
+            "kenil1710/licenseguard-fixture-vanishing",
+            "85a0d6c543af0df5650b7eaf869e8193b07c2715",
+            "MIT"
+          ],
+          "value_wei": "1000000000000000000",
+          "tx": "0x885a8b01115e1099d5bc0f15e96a991e6fb64173df5078bfe86ceab3916075f0",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 18.324,
+          "returned": {
+            "amount_wei": "1000000000000000000",
+            "bond_id": 1,
+            "bond_status": "PENDING",
+            "next": "verify_bond(1) - anyone may call it",
+            "status": "OK"
+          },
+          "failure": null
+        },
+        {
+          "label": "verify_bond vanishing",
+          "role": "trigger",
+          "from": "0xBC9e0EC78E6dE6624AD4A61Fac30459B24F149a2",
+          "fn": "verify_bond",
+          "args": [
+            1
+          ],
+          "value_wei": "0",
+          "tx": "0x9332684dbe94a7307869e29919be9a0db89f90c374b2476ad2023ff22b001b22",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 13.552,
+          "returned": {
+            "bond_id": 1,
+            "challenge_until": 1790702842,
+            "license_path": "LICENSE",
+            "outcome": "ACTIVE",
+            "status": "OK"
+          },
+          "failure": null
+        },
+        {
+          "label": "challenge vanishing copy",
+          "role": "chal3",
+          "from": "0x427AbA861C245175D8AAc7e0600087b595431DbB",
+          "fn": "challenge",
+          "args": [
+            1,
+            "sindresorhus/slugify",
+            "3b17b2e84b97624a683aafaa38184bf2746fab22",
+            "index.js",
+            "src/slugify.js",
+            "MIT"
+          ],
+          "value_wei": "200000000000000000",
+          "tx": "0x62c9c02f15e3e3f25e52e9ee1b8e4cd9011a7c97f7b7514b42605fed76b794aa",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 56.483,
+          "returned": {
+            "bond_id": 1,
+            "challenge_id": 1,
+            "judge_deadline": 1790702674,
+            "next": "judge(1) - anyone may call it",
+            "status": "OK"
+          },
+          "failure": null
+        },
+        {
+          "label": "judge (bonded repo now private)",
+          "role": "trigger",
+          "from": "0xBC9e0EC78E6dE6624AD4A61Fac30459B24F149a2",
+          "fn": "judge",
+          "args": [
+            1
+          ],
+          "value_wei": "0",
+          "tx": "0x2c5a60815c7280a2fd8582d9d702f147c4365f2e2cbb37fc7b74ef8450d08236",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 13.911,
+          "returned": {
+            "challenge_id": 1,
+            "note": "nothing changed; judge may be called again",
+            "outcome": "RETRY",
+            "reason": "the bonded commit's LICENSE answered 404",
+            "retry_until": 1790702674,
+            "side": "BONDED",
+            "status": "OK"
+          },
+          "failure": null
+        },
+        {
+          "label": "judge after deadline (refused)",
+          "role": "trigger",
+          "from": "0xBC9e0EC78E6dE6624AD4A61Fac30459B24F149a2",
+          "fn": "judge",
+          "args": [
+            1
+          ],
+          "value_wei": "0",
+          "tx": "0x2d6aa0177bdaa5e14aad3c626d23d6012c174d54097372fbec75dcdf0e05ec51",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 14.464,
+          "returned": {
+            "reason": "challenge #1 passed its deadline; call settle_stalled(1)",
+            "status": "REJECTED"
+          },
+          "failure": null
+        },
+        {
+          "label": "settle_stalled",
+          "role": "trigger",
+          "from": "0xBC9e0EC78E6dE6624AD4A61Fac30459B24F149a2",
+          "fn": "settle_stalled",
+          "args": [
+            1
+          ],
+          "value_wei": "0",
+          "tx": "0x9d1fcf423e02bad8c8b052361d0c4621f482ba0caee389408a99e904cd82bf5f",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 11.456,
+          "returned": {
+            "bond_lock_released": true,
+            "challenge_id": 1,
+            "claim_with": "claim()",
+            "outcome": "INCONCLUSIVE",
+            "reason": "DEADLINE_PASSED_BONDED",
+            "refunded_wei": "200000000000000000",
+            "status": "OK"
+          },
+          "failure": null
+        },
+        {
+          "label": "withdraw_bond",
+          "role": "proj3",
+          "from": "0x98322C3c8247D7E2791910B6E7D10E8fEB4Bb0cA",
+          "fn": "withdraw_bond",
+          "args": [
+            1
+          ],
+          "value_wei": "0",
+          "tx": "0x9e2f668921adab4ead503b08332bc99a77c05046abe633e686228a6cae944036",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 13.634,
+          "returned": {
+            "bond_id": 1,
+            "claim_with": "claim()",
+            "status": "OK",
+            "withdrawn_wei": "1000000000000000000"
+          },
+          "failure": null
+        },
+        {
+          "label": "claim proj3 (1.000000 GEN)",
+          "role": "proj3",
+          "from": "0x98322C3c8247D7E2791910B6E7D10E8fEB4Bb0cA",
+          "fn": "claim",
+          "args": [],
+          "value_wei": "0",
+          "tx": "0x28d704012702dfa987a73b32d9566a4bc17bb3accdbbd69b2c053afa098bdab9",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 11.799,
+          "returned": {
+            "paid_gen": "1.0",
+            "paid_wei": "1000000000000000000",
+            "status": "OK"
+          },
+          "failure": null
+        },
+        {
+          "label": "claim chal3 (0.200000 GEN)",
+          "role": "chal3",
+          "from": "0x427AbA861C245175D8AAc7e0600087b595431DbB",
+          "fn": "claim",
+          "args": [],
+          "value_wei": "0",
+          "tx": "0x8f30e3ea9d4fe9187c12b228cbd67019ad269b032319a61bfcffe0a648ee6078",
+          "status": "ACCEPTED",
+          "ok": true,
+          "seconds": 11.413,
+          "returned": {
+            "paid_gen": "0.2",
+            "paid_wei": "200000000000000000",
+            "status": "OK"
+          },
+          "failure": null
+        }
+      ],
+      "made_private_at": "2026-09-29T17:18:28.526Z",
+      "final": {
+        "stats": {
+          "balance_wei": "0",
+          "bonds": 1,
+          "books_zero": true,
+          "challenges": 1,
+          "held_in_bonds_wei": "0",
+          "held_in_challenges_wei": "0",
+          "held_wei": "0",
+          "ledger_ok": true,
+          "paused": false,
+          "payable_wei": "0",
+          "total_bonds": 1,
+          "total_challenges": 1,
+          "total_claimed_wei": "1200000000000000000",
+          "total_contests": 0,
+          "total_finalized": 0,
+          "total_judgements": 0,
+          "total_rejected": 1,
+          "total_retries": 1,
+          "total_stalled": 1
+        },
+        "challenges": [
+          {
+            "attempts": 1,
+            "bond_id": 1,
+            "bond_wei": "0",
+            "challenge_id": 1,
+            "challenger": "0x427AbA861C245175D8AAc7e0600087b595431DbB",
+            "challenger_contested": false,
+            "content_hash": "",
+            "contest_bond_wei": "0",
+            "contest_deadline": 0,
+            "contest_log": "",
+            "contest_side": "",
+            "contest_until": 0,
+            "copied_file": "",
+            "copied_path": "src/slugify.js",
+            "copyright_lines": "",
+            "doc_lines": "",
+            "facts_hash": "cccf403dc7c32593889b7a8f74b57cb7c27f0e87196f2cf2ddfe2297a04a02a8",
+            "filed_at": 1790702254,
+            "finalized_at": 1790702712,
+            "found": true,
+            "holder_in_copy": false,
+            "holder_in_notices": false,
+            "holders": "",
+            "judge_deadline": 1790702674,
+            "judged_at": 0,
+            "last_retry_side": "BONDED",
+            "last_retry_why": "the bonded commit's LICENSE answered 404",
+            "license": "MIT",
+            "licenses_found": "",
+            "meets": "",
+            "missing": "",
+            "model_called": false,
+            "notice_files": "",
+            "origin": "",
+            "origin_created_at": 0,
+            "original_file": "",
+            "original_path": "index.js",
+            "original_repo": "sindresorhus/slugify",
+            "original_sha": "3b17b2e84b97624a683aafaa38184bf2746fab22",
+            "outcome": "INCONCLUSIVE",
+            "paid_challenger_wei": "200000000000000000",
+            "paid_project_wei": "0",
+            "project_contested": false,
+            "reason": "DEADLINE_PASSED_BONDED",
+            "shingles_common": 0,
+            "shingles_copied": 0,
+            "shingles_original": 0,
+            "similarity_bps": 0,
+            "slash_wei": "0",
+            "status": "FINAL",
+            "verify": {
+              "consistent": true,
+              "facts_hash_ok": true,
+              "found": true,
+              "judged": false,
+              "outcome": "INCONCLUSIVE",
+              "reason": "DEADLINE_PASSED_BONDED"
+            }
+          }
+        ],
+        "bonds": [
+          {
+            "amount_wei": "1000000000000000000",
+            "bond_id": 1,
+            "challenge_until": 1790702842,
+            "commit_sha": "85a0d6c543af0df5650b7eaf869e8193b07c2715",
+            "declared_licenses": "MIT",
+            "found": true,
+            "found_non_compliant": false,
+            "last_closed_at": 1790702712,
+            "license_kinds": "MIT",
+            "license_path": "LICENSE",
+            "open_challenges": 0,
+            "owner": "0x98322C3c8247D7E2791910B6E7D10E8fEB4Bb0cA",
+            "posted_at": 1790702223,
+            "remaining_wei": "0",
+            "repo": "kenil1710/licenseguard-fixture-vanishing",
+            "slashed_wei": "0",
+            "status": "WITHDRAWN",
+            "total_challenges": 1,
+            "unbond_delay_s": 60,
+            "unreadable": true,
+            "verified_at": 1790702242,
+            "verify_attempts": 1,
+            "verify_deadline": 1790702643,
+            "verify_docs": "bonded:history 200 api 932a8be122b04abff46d0754ac91d37650d9b185ffedecda64b9f38a0b17f8a3\nbonded:.licenseguard 200 64 eb71d02e62ec078befa948e018ca7562445f5dd124f03084d78a689064b15d79\nbonded:LICENSE 200 1066 9f9bb4f0f8f218c144087341d2ca0c0a67ad88f64fe621de1dc3b0e1e72dde42",
+            "verify_hash": "a6a88529c660487ab81ddef7aa187966e8d2489a77fe8e3d25d1e1d4f110bd15",
+            "verify_reason": "VERIFIED",
+            "withdrawn_at": 1790702867
+          }
+        ]
+      }
+    }
+  },
+  "finished_at": "2026-09-29T17:35:09.905Z",
+  "minutes": "18.3"
+}

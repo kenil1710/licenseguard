@@ -381,7 +381,7 @@ export function connect({ networkName = argOf("network", "studiodev"), address, 
    * the chain — which is the one failure mode a seed script must not have.
    */
   const deadline = chain.isStudio ? 900_000 : 900_000;
-  const pollMs = chain.isStudio ? 1_500 : 5_000;
+  const pollMs = chain.isStudio ? 5_000 : 5_000;
 
   /**
    * Submit a write and wait for it to reach a terminal state.
