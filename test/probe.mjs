@@ -32,12 +32,15 @@ const JOBS = [
   { key: "api_compare_fork", url: `${A}/repos/sindresorhus/slugify/compare/${FORK}...HEAD?per_page=1`, ua: true, strict: false },
   { key: "api_repo", url: `${A}/repos/sindresorhus/slugify`, ua: true, strict: false },
   { key: "api_commit_missing_sha", url: `${A}/repos/sindresorhus/slugify/commits/${"0".repeat(40)}`, ua: true, strict: false },
+  { key: "raw_8mb", url: `${R}/kenil1710/licenseguard-fixture-oversize/OVS/data-8mb.js`, ua: false, strict: false },
+  { key: "raw_30mb", url: `${R}/kenil1710/licenseguard-fixture-oversize/OVS/data-30mb.js`, ua: false, strict: false },
+  { key: "raw_90mb", url: `${R}/kenil1710/licenseguard-fixture-oversize/OVS/data-90mb.js`, ua: false, strict: false },
   { key: "api_rate_limit", url: `${A}/rate_limit`, ua: true, strict: false },
 ];
 
 const only = argOf("only");
 const jobs = (only ? JOBS.filter((j) => only.split(",").includes(j.key)) : JOBS)
-  .map((j) => ({ ...j, url: j.url.replace("LODASH_SHA", process.env.LODASH || "") }));
+  .map((j) => ({ ...j, url: j.url.replace("LODASH_SHA", process.env.LODASH || "").replace("OVS", process.env.OVS || "") }));
 let lanes = argOf("lanes") ? argOf("lanes").split(",") : null;
 const laneCount = Number(argOf("n", "4"));
 const LANE_ROLES = ["owner", "proj1", "proj2", "proj3", "chal1", "chal2"];

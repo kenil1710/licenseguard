@@ -1,0 +1,24 @@
+{
+  "key": "raw_8mb",
+  "url": "https://raw.githubusercontent.com/kenil1710/licenseguard-fixture-oversize/17b1b7fe496bfa1f5541996cb198c02d5d2571e1/data-8mb.js",
+  "user_agent": false,
+  "strict": false,
+  "probe_contract": "0x5e2bf5badD187131815E79c04618767bcA354335",
+  "tx": "0xafe3e941a6b64f88544b5cabf709bbfb97523b08ed9498b5c5a65bf39f1c8217",
+  "status": "ACCEPTED",
+  "ok": true,
+  "seconds": 33,
+  "measured_at": "2026-09-29T18:13:40.681Z",
+  "failure": null,
+  "stderr_tail": "",
+  "result": {
+    "attrs": "body,headers,status",
+    "err": "",
+    "fnv": "96fe7d240b07e499",
+    "head": "export const v0 = 347712782; // f2a74de4\nexport const v1 = 423938499; // a6a3a450\nexport const v2 = 77777868; // 1818e811\nexport const v3 = 625763863; // 81e74ef5\nexport const v4 = 40260662; // 1600a35a\nexport const v5 = 449008934; // 11e20b8f\nexport const v6 = 97402358; // 8d116ece\nexport const v7 = 63469421; // f29d0da9\nexport const v8 = 619659571; // 95e60af5\nexport const v9 = 53246119; // f9eb",
+    "headers": "{\"cache-control\": \"b'max-age=300'\", \"etag\": \"b'W/\\\"b51a787da81c84fb1d14b75912db17c7b7f438b070fa78f75fb643987456a78d\\\"'\", \"x-cache\": \"b'HIT'\"}",
+    "len": 8388621,
+    "sha256": "88b71b44b8279f638335052bdffdc2e5c3ad7ffb0d9fc6bf1b06d17c7b30edd1",
+    "status": 200
+  }
+}

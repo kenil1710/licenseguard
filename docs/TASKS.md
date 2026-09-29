@@ -48,3 +48,17 @@ Status legend: [ ] todo · [~] in progress · [x] done · [!] blocked (reason in
 - [x] 576 offline tests (416 logic, 64 threat, 96 randomized incl. coverage of every outcome and exit)
 - [x] deployed canonical + 2 demos, byte-identical (test/verify_onchain.mjs)
 - [x] docs/ATTACK_BRIEF.md
+
+## Independent review, round 1 (test/test_attacks.py) — five findings
+- [ ] A1 license/notice/third-party filenames refused as copied_path or original_path (any case, any extension), before any fetch
+- [ ] A1 extra: an original FILE that is itself a license text (after comment stripping) is NOT_DERIVED - closes the same attack under any other filename
+- [ ] A2 comments stripped inside lines (string-aware): /* */ anywhere (multi-line too), // and # to end of line
+- [ ] A3 one open challenge per (bond, copied_path); a paid copied file is closed for good; slash per copied file capped at SLASH_BPS
+- [ ] A3 check: a losing challenge must not lock the path (else a project's sock-puppet burns its own copied files for free)
+- [ ] A4 bonded commit 404/410/451 while the original is readable = FORFEIT (ATTRIBUTION_MISSING money); only outages RETRY -> INCONCLUSIVE
+- [ ] A4 withdraw blocked while any challenge (incl. a forfeit) is open
+- [ ] A5 contest re-read with the bonded commit gone -> forfeit (challenger's contest wins); stalled challenger contest with bonded side unreadable -> settled against the project
+- [ ] ALSO original commit must be dated before the bonded commit, on paying paths only; bonded date floored at the bonded repo's created_at (else a backdated bonded commit vetoes every challenge)
+- [ ] test_attacks.py kept in the suite; tests whose preconditions the specified fixes change are updated to the specified behaviour, each noted
+- [ ] review each fix for new stuck paths / unilateral control
+- [ ] redeploy x3, byte-for-byte; reseed (A1 refusal, private-repo forfeit, real outage INCONCLUSIVE); drain to 0; audit; README; push; addresses file

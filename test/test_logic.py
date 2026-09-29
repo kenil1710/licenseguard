@@ -341,7 +341,13 @@ class TestSmallPure(unittest.TestCase):
 
     def test_history_fact(self):
         self.assertEqual(LG._history_fact(json.dumps({"status": "identical", "behind_by": 0}).encode()),
-                         "identical behind_by=0")
+                         "identical behind_by=0 date=")
+        body = {"status": "ahead", "behind_by": 0,
+                "base_commit": {"commit": {"committer": {"date": "2020-01-21T15:25:29Z"}}}}
+        fact = LG._history_fact(json.dumps(body).encode())
+        self.assertEqual(fact, "ahead behind_by=0 date=2020-01-21T15:25:29Z")
+        self.assertEqual(LG._history_of(fact), "OK")
+        self.assertEqual(LG._commit_at(fact), LG._epoch_from_iso("2020-01-21T15:25:29Z"))
 
     def test_history_fact_junk(self):
         self.assertEqual(LG._history_fact(b"<html>"), "UNPARSEABLE")
@@ -373,9 +379,11 @@ class TestSmallPure(unittest.TestCase):
         self.assertEqual(LG._as_int("-3", 0), -3)
         self.assertEqual(LG._as_int("1e3", 5), 5)
 
-    def test_pair_key_ignores_sha_and_license(self):
-        self.assertEqual(LG._pair_key(1, "Ada/Slugify", "index.js", "src/x.js"),
-                         LG._pair_key(1, "ada/slugify", "index.js", "src/x.js"))
+    def test_pair_key_is_the_copied_file(self):
+        """Review finding A3: the violation is the copied file, whatever it was
+        copied from - the original repo, commit, path and license are not in it."""
+        self.assertEqual(LG._pair_key(1, "src/x.js"), "1|src/x.js")
+        self.assertNotEqual(LG._pair_key(1, "src/x.js"), LG._pair_key(2, "src/x.js"))
 
     def test_dir_of(self):
         self.assertEqual(LG._dir_of("a/b/c.js"), "a/b")
@@ -412,10 +420,16 @@ _add_cases(TestModelAnswer, "invalid", [
 
 
 def vec(**over):
-    v = {"original_file": "OK", "copied_file": "OK", "shingles_original": 500,
-         "shingles_copied": 500, "shingles_common": 500, "similarity_bps": 10000,
+    """A vector; `similarity_bps=X` sets the shingle COUNTS that produce X,
+    because the outcome is decided from the counts, never from the label."""
+    v = {"original_file": "OK", "copied_file": "OK", "shingles_original": 10000,
+         "shingles_copied": 10000, "shingles_common": 10000, "similarity_bps": 10000,
+         "shingles_original_m2": 0, "shingles_copied_m2": 0, "shingles_common_m2": 0,
          "licenses_found": "MIT", "holders": "ada lovelace", "holder_in_copy": False,
-         "holder_in_notices": False, "meets": "", "missing": "", "origin": "OK"}
+         "holder_in_notices": False, "meets": "", "missing": "", "origin": "OK",
+         "bonded_gone": False, "original_is_license": False}
+    if "similarity_bps" in over:
+        v["shingles_common"] = over["similarity_bps"]
     v.update(over)
     return v
 
@@ -430,8 +444,17 @@ _add_cases(TestDecide, "table", [
     (vec(copied_file="MISSING"), ("NOT_DERIVED", "COPIED_FILE_MISSING")),
     (vec(copied_file="TOO_LARGE"), ("INCONCLUSIVE", "FILE_UNREADABLE")),
     (vec(original_file="BINARY"), ("INCONCLUSIVE", "FILE_UNREADABLE")),
-    (vec(shingles_original=39), ("INCONCLUSIVE", "TOO_SMALL_TO_MEASURE")),
-    (vec(shingles_copied=39), ("INCONCLUSIVE", "TOO_SMALL_TO_MEASURE")),
+    (vec(shingles_original=39, shingles_common=39), ("INCONCLUSIVE", "TOO_SMALL_TO_MEASURE")),
+    (vec(shingles_copied=39, shingles_common=39), ("INCONCLUSIVE", "TOO_SMALL_TO_MEASURE")),
+    # the copy's WHOLE-FILE size (M2) counts: hiding code in comments cannot shrink it
+    (vec(shingles_copied=39, shingles_common=39, shingles_original_m2=500,
+         shingles_copied_m2=500, shingles_common_m2=500), ("ATTRIBUTION_MISSING", "NO_ATTRIBUTION_FOUND")),
+    (vec(similarity_bps=100, shingles_original_m2=500, shingles_copied_m2=500,
+         shingles_common_m2=300), ("ATTRIBUTION_MISSING", "NO_ATTRIBUTION_FOUND")),
+    (vec(bonded_gone=True), ("ATTRIBUTION_MISSING", "FORFEIT_BONDED_COMMIT_WITHDRAWN")),
+    (vec(bonded_gone=True, origin="AFTER_BOND"), ("NOT_DERIVED", "ORIGIN_CREATED_AFTER_BOND")),
+    (vec(original_is_license=True), ("NOT_DERIVED", "ORIGINAL_IS_A_LICENSE_TEXT")),
+    (vec(origin="NEWER_THAN_COPY"), ("NOT_DERIVED", "ORIGIN_NEWER_THAN_COPY_DIRECTION_UNPROVEN")),
     (vec(similarity_bps=4999), ("NOT_DERIVED", "BELOW_SIMILARITY_THRESHOLD")),
     (vec(similarity_bps=5000), ("ATTRIBUTION_MISSING", "NO_ATTRIBUTION_FOUND")),
     (vec(licenses_found="APACHE_2"), ("INCONCLUSIVE", "LICENSE_NOT_CONFIRMED")),
@@ -696,12 +719,39 @@ class TestVerifyBond(unittest.TestCase):
         self.w.call(OWNER, "set_paused", True)
         self.assertEqual(self.verify(bid)["outcome"], "ACTIVE")
 
-    def test_uses_one_api_call_per_node(self):
+    def test_uses_two_api_calls_per_node(self):
+        """compare (history + commit date) and the repository (created_at floor)."""
         self.w.bonded_repo()
         bid = self.post()
         lg_stub.CALLS.clear()
         self.verify(bid)
-        self.assertEqual(len(self.w.api_calls()), 2)   # leader + validator
+        self.assertEqual(len(self.w.api_calls()), 4)   # 2 x (leader + validator)
+
+    def test_commit_date_recorded(self):
+        self.w.bonded_repo(committed=iso(T0 - 3600))
+        bid = self.post()
+        self.verify(bid)
+        self.assertEqual(int(self.w.bd(bid).commit_at), T0 - 3600)
+
+    def test_backdated_commit_floored_at_repo_creation(self):
+        """A bonded party that backdates its commit to 1990 cannot make every
+        original look newer than the copy: the date is floored at GitHub's
+        created_at of the repository."""
+        self.w.bonded_repo(committed="1990-01-01T00:00:00Z", created=iso(T0 - 100 * 86400))
+        bid = self.post()
+        self.verify(bid)
+        self.assertEqual(int(self.w.bd(bid).commit_at), T0 - 100 * 86400)
+
+    def test_missing_commit_date_is_retry(self):
+        self.w.bonded_repo(committed="")
+        bid = self.post()
+        self.assertEqual(self.verify(bid)["outcome"], "RETRY")
+
+    def test_bonded_repo_metadata_missing_rejected(self):
+        self.w.bonded_repo()
+        lg_stub.WEB.pop(API + "acme/app")
+        bid = self.post()
+        self.assertEqual(self.verify(bid)["reason"], "REPOSITORY_NOT_FOUND")
 
     def test_api_sends_user_agent(self):
         self.w.bonded_repo()
@@ -1055,8 +1105,19 @@ class TestRetry(unittest.TestCase):
             self.assertEqual(c.last_retry_side, side)
         return out
 
-    def test_bonded_license_unreadable(self):
-        self.retry_on(raw("acme/app", SHA_B, "LICENSE"), 404, "BONDED")
+    def test_bonded_license_gone_is_forfeit_not_retry(self):
+        """Review finding A4: 404 on the bonded commit while the original is
+        readable is the bonded party's doing - a forfeit, judged at once."""
+        self.w.gh.fail(raw("acme/app", SHA_B, "LICENSE"), 404)
+        out = self.w.judge(self.cid)
+        self.assertEqual((out["outcome"], out["reason"]),
+                         ("ATTRIBUTION_MISSING", "FORFEIT_BONDED_COMMIT_WITHDRAWN"))
+        self.assertTrue(self.w.bd(self.bid).unreadable)
+
+    def test_both_sides_gone_is_retry(self):
+        self.w.gh.fail(raw("acme/app", SHA_B, "LICENSE"), 404)
+        self.w.gh.fail(raw("ada/slugify", SHA_O, "index.js"), 404)
+        self.retry_on(raw("acme/app", SHA_B, "LICENSE"), 404, "BONDED_UNREADABLE")
 
     def test_bonded_license_5xx(self):
         self.retry_on(raw("acme/app", SHA_B, "LICENSE"), 500, "BONDED")
@@ -1145,12 +1206,15 @@ class TestRetry(unittest.TestCase):
         self.assertEqual(int(self.w.bd(self.bid).open_challenges), 0)
         self.assertFalse(self.w.bd(self.bid).unreadable)
 
-    def test_bonded_side_stall_suspends_badge(self):
-        self.retry_on(raw("acme/app", SHA_B, "LICENSE"), 404, "BONDED")
+    def test_bonded_outage_stall_is_inconclusive_badge_kept(self):
+        """An OUTAGE is nobody's doing: INCONCLUSIVE, both refunded, badge kept."""
+        self.retry_on(raw("acme/app", SHA_B, "LICENSE"), 503, "BONDED")
         self.w.advance(86400 + 1)
-        self.w.call(TRIGGER, "settle_stalled", self.cid)
-        self.assertTrue(self.w.bd(self.bid).unreadable)
-        self.assertFalse(self.w.view("is_compliant", "acme/app"))
+        out = self.w.call(TRIGGER, "settle_stalled", self.cid)
+        self.assertEqual((out["outcome"], out["reason"]), ("INCONCLUSIVE", "DEADLINE_PASSED_BONDED"))
+        self.assertEqual(self.w.owed(CHAL), int(self.w.c.challenge_bond_wei))
+        self.assertFalse(self.w.bd(self.bid).unreadable)
+        self.assertTrue(self.w.view("is_compliant", "acme/app"))
 
     def test_unjudged_stall(self):
         self.w.advance(86400 + 1)
@@ -1376,7 +1440,7 @@ class TestContest(unittest.TestCase):
         self.w.advance(86400 + 1)
         self.assertEqual(self.w.judge(self.cid)["status"], "REJECTED")
         out = self.w.call(OUTSIDER, "settle_stalled", self.cid)
-        self.assertEqual(out["contest"], "DROPPED")
+        self.assertEqual(out["contest"], "DROPPED_AT_DEADLINE")
         self.assertEqual(self.w.owed(CHAL), self.cb)
         self.assertEqual(self.w.ch(self.cid).outcome, "NOT_DERIVED")
         self.assertEqual(self.w.ch(self.cid).status, "PROVISIONAL")
@@ -1473,10 +1537,11 @@ class TestFinalizeMoney(unittest.TestCase):
         w = World()
         w.original()
         w.gh.put("ada/slugify", SHA_O, "other.js", ORIGINAL + "\n// v2\n")
-        bid = w.bond(files={"src/a.js": COPY_STRIPPED, "src/b.js": COPY_STRIPPED})
+        bid = w.bond(files={"src/a.js": COPY_STRIPPED, "src/b.js": COPY_STRIPPED,
+                            "src/c.js": COPY_STRIPPED})
         c1 = w.challenge_ok(bid, "src/a.js")
         c2 = w.challenge_ok(bid, "src/b.js", who=CHAL2)
-        c3 = w.challenge_ok(bid, "src/b.js", original=("ada/slugify", SHA_O, "other.js"))
+        c3 = w.challenge_ok(bid, "src/c.js", original=("ada/slugify", SHA_O, "other.js"))
         for c in (c1, c2, c3):
             self.assertEqual(w.judge(c)["outcome"], "ATTRIBUTION_MISSING")
         for c in (c1, c2, c3):
@@ -1707,7 +1772,8 @@ class TestSourceInvariants(unittest.TestCase):
                                                     original_sha="a" * 40, original_path="p",
                                                     license="MIT"))(),
                                  type("B", (), dict(bond_id=1, repo="c/d", commit_sha="b" * 40,
-                                                    license_path="LICENSE", posted_at=5))())
+                                                    license_path="LICENSE", posted_at=5,
+                                                    commit_at=4))())
         for v in facts.values():
             self.assertIsInstance(v, (str, int))
 

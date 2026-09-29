@@ -30,8 +30,8 @@ console.log(`source contracts/LicenseGuard.py ${code.length} bytes sha256 ${sha2
 const DAY = 86400;
 const VARIANTS = {
   LicenseGuard: { label: "canonical", args: [GEN, GEN / 5n, GEN / 10n, 30 * DAY, 7 * DAY, 2 * DAY, DAY] },
-  LicenseGuardDemo: { label: "DEMO (outcomes + contest): windows in minutes", args: [GEN, GEN / 5n, GEN / 10n, 900, 60, 180, 420] },
-  LicenseGuardDemoStall: { label: "DEMO (fetch failure to deadline): windows in minutes", args: [GEN, GEN / 5n, GEN / 10n, 600, 60, 180, 420] },
+  LicenseGuardDemo: { label: "DEMO (outcomes, contest, refusals): windows in minutes", args: [GEN, GEN / 5n, GEN / 10n, 780, 60, 180, 420] },
+  LicenseGuardDemoStall: { label: "DEMO (forfeit, unreadable-to-deadline): windows in minutes", args: [GEN, GEN / 5n, GEN / 10n, 780, 60, 180, 480] },
 };
 const NAMES = ["min_bond_wei", "challenge_bond_wei", "contest_bond_wei", "challenge_window_s", "unbond_delay_s", "contest_window_s", "deadline_s"];
 

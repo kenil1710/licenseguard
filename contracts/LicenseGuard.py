@@ -97,7 +97,7 @@ import typing
 # The two header lines above are the whole of what GenVM reads before the code;
 # a third comment line there makes the contract undeployable.
 
-POLICY_VERSION = "1.0.0"
+POLICY_VERSION = "1.1.0"
 
 BPS = 10000
 DAY = 86400
@@ -176,16 +176,30 @@ SIDE_CHALLENGER = "CHALLENGER"
 #
 # SIMILARITY: normalised code tokens, 5-token shingles, containment in either
 # direction (a whole file copied into a bigger one, or part of a file copied
-# whole), in integer basis points. Lines that start as a comment are dropped
-# first, so two unrelated files that share a license header are not "similar"
-# because of it - and a copy that deletes the header still matches.
+# whole), in integer basis points. TWO measures, and the larger decides:
+#
+#   M1  comments stripped from BOTH files - /* ... */ anywhere (also across
+#       lines), <!-- ... -->, // to end of line, and # to end of line when it
+#       follows whitespace or starts a line - so two unrelated files that share
+#       a license header are not "similar" because of it.
+#   M2  comments stripped from the ORIGINAL only; the COPY is read whole, with
+#       just the comment-delimiter characters / * # dropped from both. A copier
+#       cannot hide copied code by making a comment-stripper misread it
+#       (`/**/` before every line, a regex like /[ /*]/ that opens a fake block
+#       comment, '#'; before a statement): M2 still sees every token of the
+#       copy. Shared license headers cannot inflate M2, because the ORIGINAL's
+#       comments are gone before anything is compared.
+#
+# (Review finding A2: the first version dropped every line that STARTED with
+# a comment marker, so `/**/` before each line hid a verbatim copy.)
 SHINGLE_K = 5
 DERIVED_BPS = 5000     # >= 50% of either file's shingles shared -> DERIVED
 MIN_SHINGLES = 40      # below this in the smaller file: too small to measure
 MAX_FILE_BYTES = 200000
-COMMENT_PREFIXES = ("//", "#", "/*", "*", "<!--", "-->", "'''", '"""')
+DELIMITER_TOKENS = ("/", "*", "#")
 
-SLASH_BPS = 5000       # ATTRIBUTION_MISSING: challenger takes 50% of the bond
+SLASH_BPS = 5000       # ATTRIBUTION_MISSING: challenger takes 50% of the bond,
+                       # at most once per copied file (review finding A3)
 
 # Where license and notice files are looked for, at the pinned commit. The
 # first LICENSE-like file found is the license; every NOTICE-like file found
@@ -394,13 +408,51 @@ def _dir_of(path: str) -> str:
     return path[:i] if i > 0 else ""
 
 
-def _pair_key(bond_id: int, original_repo: str, original_path: str,
-              copied_path: str) -> str:
-    """One file pair per bond, ever (D1: no refiles). The ORIGINAL COMMIT and
-    the LICENSE are deliberately not part of the key: naming another commit of
-    the same file, or another license, is a refile."""
-    return (str(bond_id) + "|" + original_repo.lower() + "|" + original_path
-            + "|" + copied_path)
+def _pair_key(bond_id: int, copied_path: str) -> str:
+    """The violation is the COPIED FILE in the bonded commit, whatever it was
+    copied from. Keying on the original let the same copy be slashed once per
+    fork of the original (review finding A3). One key per (bond, copied file):
+    one open challenge at a time, and once it has paid, never again."""
+    return str(bond_id) + "|" + copied_path
+
+
+# Filenames that are license, notice or third-party-notice files. Two license
+# texts are near-identical by construction, so a LICENSE "copied" from another
+# project's LICENSE would read as DERIVED with the original holder missing -
+# an honest project slashed over its own license file (review finding A1).
+# Refused as copied_path AND as original_path, any case, any extension -
+# EXCEPT a source-code extension: refusing `src/notice.js` would let a copier
+# rename a stolen file and make it unchallengeable. A license text under a
+# code name gains nothing: an original that IS a license text is NOT_DERIVED
+# by content (`original_is_license`), whatever it is called.
+NOTICE_STEMS = ("license", "licence", "copying", "notice", "notices")
+NOTICE_PREFIXES = ("license-", "license_", "licence-", "licence_", "copying-",
+                   "copying_", "notice-", "notice_", "third_party", "third-party",
+                   "thirdparty")
+
+
+CODE_EXTS = ("js", "mjs", "cjs", "jsx", "ts", "tsx", "py", "rb", "go", "rs", "java", "kt",
+             "kts", "scala", "c", "h", "cc", "cpp", "cxx", "hpp", "hh", "cs", "swift", "m",
+             "mm", "php", "pl", "pm", "sh", "bash", "zsh", "lua", "r", "dart", "ex", "exs",
+             "erl", "hs", "ml", "fs", "clj", "vue", "svelte", "sql", "css", "scss", "less")
+
+
+def _is_notice_name(path: str) -> bool:
+    base = path.lower()
+    i = base.rfind("/")
+    if i >= 0:
+        base = base[i + 1:]
+    k = base.rfind(".")
+    if k >= 0 and base[k + 1:] in CODE_EXTS:
+        return False
+    j = base.find(".")
+    stem = base[:j] if j >= 0 else base
+    if stem in NOTICE_STEMS:
+        return True
+    for p in NOTICE_PREFIXES:
+        if base.startswith(p):
+            return True
+    return False
 
 
 # --- text measurement (all deterministic, all on the compared axis) ------------
@@ -426,34 +478,78 @@ def _words(text: str) -> str:
     return "".join(out).strip()
 
 
-def _code_tokens(text: str) -> list:
-    """Code tokens: identifiers/numbers lower-cased, every other non-space
-    character a token of its own. Lines that START as a comment are skipped."""
+def _tokenize(text: str) -> list:
+    """Identifiers/numbers lower-cased; every other non-space character a
+    token of its own."""
     out = []
-    for line in text.split("\n"):
-        t = line.strip()
-        if t == "":
+    cur = []
+    for ch in text.lower():
+        if ch.isalnum() or ch == "_":
+            cur.append(ch)
             continue
-        skip = False
-        for p in COMMENT_PREFIXES:
-            if t.startswith(p):
-                skip = True
-                break
-        if skip:
-            continue
-        cur = []
-        for ch in t.lower():
-            if ch.isalnum() or ch == "_":
-                cur.append(ch)
-                continue
-            if len(cur) > 0:
-                out.append("".join(cur))
-                cur = []
-            if not ch.isspace():
-                out.append(ch)
         if len(cur) > 0:
             out.append("".join(cur))
+            cur = []
+        if not ch.isspace():
+            out.append(ch)
+    if len(cur) > 0:
+        out.append("".join(cur))
     return out
+
+
+def _strip_comments(text: str) -> str:
+    """M1's comment stripper: /* ... */ and <!-- ... --> anywhere (a block may
+    span lines), // to end of line, # to end of line when it starts a line or
+    follows whitespace. Language-agnostic and deliberately simple; M2 is what
+    makes fooling it pointless."""
+    out = []
+    i = 0
+    n = len(text)
+    block = ""
+    while i < n:
+        ch = text[i]
+        if block != "":
+            if text.startswith(block, i):
+                i += len(block)
+                block = ""
+                out.append(" ")
+                continue
+            if ch == "\n":
+                out.append("\n")
+            i += 1
+            continue
+        if text.startswith("/*", i):
+            block = "*/"
+            i += 2
+            continue
+        if text.startswith("<!--", i):
+            block = "-->"
+            i += 4
+            continue
+        prev = out[-1] if len(out) > 0 else "\n"
+        if text.startswith("//", i) or (ch == "#" and (prev == " " or prev == "\t"
+                                                       or prev == "\n")):
+            j = text.find("\n", i)
+            i = n if j < 0 else j
+            continue
+        out.append(ch)
+        i += 1
+    return "".join(out)
+
+
+def _code_tokens(text: str) -> list:
+    """M1 tokens: comments stripped."""
+    return _tokenize(_strip_comments(text))
+
+
+def _raw_tokens(text: str) -> list:
+    """M2 tokens of the copy: the whole file, delimiter characters dropped."""
+    return [t for t in _tokenize(text) if t not in DELIMITER_TOKENS]
+
+
+def _bare(tokens: list) -> list:
+    """M2 tokens of the original: comments already stripped, delimiters dropped."""
+    return [t for t in tokens if t not in DELIMITER_TOKENS]
 
 
 def _shingles(tokens: list) -> set:
@@ -665,12 +761,31 @@ def _decode(body: typing.Any) -> tuple:
 # origin checked. Every other outcome already favours the project or refunds.
 
 ORIGIN_UNCHECKED = "UNCHECKED"
-ORIGIN_STATES = (ORIGIN_UNCHECKED, "OK", "UNAVAILABLE", "AFTER_BOND", "NOT_IN_HISTORY")
+ORIGIN_STATES = (ORIGIN_UNCHECKED, "OK", "UNAVAILABLE", "AFTER_BOND", "NOT_IN_HISTORY",
+                 "NEWER_THAN_COPY")
+
+
+def _similarity_of(v: dict) -> int:
+    """The larger of the two measures, from the stored shingle counts."""
+    m1 = _similarity_bps(_as_int(v.get("shingles_original"), 0),
+                         _as_int(v.get("shingles_copied"), 0),
+                         _as_int(v.get("shingles_common"), 0))
+    m2 = _similarity_bps(_as_int(v.get("shingles_original_m2"), 0),
+                         _as_int(v.get("shingles_copied_m2"), 0),
+                         _as_int(v.get("shingles_common_m2"), 0))
+    return m1 if m1 > m2 else m2
 
 
 def _file_gates(v: dict, license: str) -> tuple:
     """(outcome, reason) decided from the pinned files alone, or ("", "") when
     the model must judge the attribution. PURE."""
+    if bool(v.get("bonded_gone")):
+        # Review finding A4. The bonded commit was verified readable when the
+        # bond was posted and the original is readable now: the bonded party
+        # took its evidence away (private, deleted, force-pushed away). That
+        # is a FORFEIT, with the money of ATTRIBUTION_MISSING - still subject
+        # to the origin checks, like every result that pays the challenger.
+        return (ATTRIBUTION_MISSING, "FORFEIT_BONDED_COMMIT_WITHDRAWN")
     of = str(v.get("original_file", ""))
     cf = str(v.get("copied_file", ""))
     if of == "MISSING":
@@ -679,12 +794,18 @@ def _file_gates(v: dict, license: str) -> tuple:
         return (NOT_DERIVED, "COPIED_FILE_MISSING")
     if of != "OK" or cf != "OK":
         return (INCONCLUSIVE, "FILE_UNREADABLE")
+    if bool(v.get("original_is_license")):
+        # A license text is not a work anyone copied: two MIT texts are
+        # near-identical by construction (review finding A1, any filename).
+        return (NOT_DERIVED, "ORIGINAL_IS_A_LICENSE_TEXT")
     no = _as_int(v.get("shingles_original"), 0)
     nc = _as_int(v.get("shingles_copied"), 0)
-    small = no if no < nc else nc
+    nc2 = _as_int(v.get("shingles_copied_m2"), 0)
+    ncopy = nc if nc > nc2 else nc2
+    small = no if no < ncopy else ncopy
     if small < MIN_SHINGLES:
         return (INCONCLUSIVE, "TOO_SMALL_TO_MEASURE")
-    if _as_int(v.get("similarity_bps"), 0) < DERIVED_BPS:
+    if _similarity_of(v) < DERIVED_BPS:
         return (NOT_DERIVED, "BELOW_SIMILARITY_THRESHOLD")
     found = [x for x in str(v.get("licenses_found", "")).split(",") if x != ""]
     if license not in found:
@@ -739,6 +860,8 @@ def _decide(v: dict, license: str) -> tuple:
         return (NOT_DERIVED, "ORIGIN_CREATED_AFTER_BOND")
     if origin == "NOT_IN_HISTORY":
         return (NOT_DERIVED, "ORIGIN_NOT_IN_HISTORY")
+    if origin == "NEWER_THAN_COPY":
+        return (NOT_DERIVED, "ORIGIN_NEWER_THAN_COPY_DIRECTION_UNPROVEN")
     return (INCONCLUSIVE, "NO_READING")
 
 
@@ -796,7 +919,8 @@ def _gone(status: int) -> bool:
 
 def _history_fact(body: bytes) -> str:
     """The one fact read from a compare `<sha>...HEAD` answer:
-    "<status> behind_by=<n>", or "UNPARSEABLE"."""
+    "<status> behind_by=<n> date=<committer date of <sha>>", or "UNPARSEABLE".
+    The date comes from `base_commit` of the same answer - no extra call."""
     try:
         d = json.loads(body.decode("utf-8", errors="ignore"))
     except Exception:
@@ -806,7 +930,13 @@ def _history_fact(body: bytes) -> str:
     behind = d.get("behind_by")
     if not isinstance(behind, int) or isinstance(behind, bool):
         return "UNPARSEABLE"
-    return str(d.get("status", "")) + " behind_by=" + str(behind)
+    date = ""
+    bc = d.get("base_commit")
+    if isinstance(bc, dict) and isinstance(bc.get("commit"), dict):
+        cm = bc["commit"].get("committer")
+        if isinstance(cm, dict) and isinstance(cm.get("date"), str):
+            date = cm["date"]
+    return str(d.get("status", "")) + " behind_by=" + str(behind) + " date=" + date
 
 
 def _history_of(fact: str) -> str:
@@ -816,9 +946,21 @@ def _history_of(fact: str) -> str:
     commits URLs, but compares as `diverged` with behind_by > 0 (measured)."""
     if fact == "UNPARSEABLE" or fact == "":
         return "UNPARSEABLE"
-    if fact == "identical behind_by=0" or fact == "ahead behind_by=0":
+    head = fact
+    i = fact.find(" date=")
+    if i >= 0:
+        head = fact[:i]
+    if head == "identical behind_by=0" or head == "ahead behind_by=0":
         return "OK"
     return "NOT_IN_HISTORY"
+
+
+def _commit_at(fact: str) -> int:
+    """Epoch of the pinned commit's committer date in a history fact, or 0."""
+    i = fact.find(" date=")
+    if i < 0:
+        return 0
+    return _epoch_from_iso(fact[i + 6:])
 
 
 def _created_fact(body: bytes) -> str:
@@ -918,14 +1060,16 @@ def _bonded_notice_names(facts: dict) -> list:
 
 
 def _empty_vector(facts: dict) -> dict:
-    return {"ok": True, "facts_hash": _facts_hash(facts),
-            "original_file": "", "copied_file": "",
+    return {"ok": True, "facts_hash": _facts_hash(facts), "bonded_gone": False,
+            "original_file": "", "copied_file": "", "original_is_license": False,
             "shingles_original": 0, "shingles_copied": 0, "shingles_common": 0,
+            "shingles_original_m2": 0, "shingles_copied_m2": 0, "shingles_common_m2": 0,
             "similarity_bps": 0, "licenses_found": "", "copyright_lines": "",
             "holders": "", "holder_in_copy": False, "holder_in_notices": False,
             "notice_files": "", "model_called": False, "meets": "",
             "missing": "", "origin": ORIGIN_UNCHECKED, "origin_created_at": 0,
-            "doc_lines": "", "content_hash": "", "outcome": "", "reason": ""}
+            "origin_commit_at": 0, "doc_lines": "", "content_hash": "",
+            "outcome": "", "reason": ""}
 
 
 def _finish(v: dict, rd: list, license: str) -> dict:
@@ -937,10 +1081,18 @@ def _finish(v: dict, rd: list, license: str) -> dict:
     return v
 
 
+def _common(a: set, b: set) -> int:
+    n = 0
+    for x in a:
+        if x in b:
+            n += 1
+    return n
+
+
 def _measure(facts: dict) -> tuple:
     """(vector, reader, prompt_parts, done, retry-or-None): every
     deterministic field that the PINNED FILES decide. `done` is True when the
-    file gates already decided the outcome (no model, no API)."""
+    file gates already decided the outcome (no model)."""
     rd = []
     v = _empty_vector(facts)
     license = str(facts["license"])
@@ -951,13 +1103,30 @@ def _measure(facts: dict) -> tuple:
     parts = {}
 
     # 1. The bonded commit is still readable: its LICENSE was read when the
-    #    bond was verified. Unreadable now is the BONDED side's failure: RETRY
-    #    until the deadline, then INCONCLUSIVE with the bond's badge suspended.
+    #    bond was verified.
+    #    - a server that does not answer (0, 403, 429, 5xx) is an OUTAGE:
+    #      RETRY, and at the deadline INCONCLUSIVE with both refunded;
+    #    - 404 / 410 / 451 means the bonded commit was taken away. If the
+    #      original IS readable, that is the bonded party's doing: FORFEIT
+    #      (review finding A4). If the original is not readable either, nobody
+    #      can say whose doing it is: RETRY on side BONDED_UNREADABLE.
     lp = str(facts["bonded_license_path"])
     st, _b = _get(rd, "bonded:" + lp, _raw_url(brepo, bsha, lp))
     if st != 200:
-        return (v, rd, parts, False, _retry(facts, "BONDED", "the bonded commit's "
-                                            + lp + " answered " + str(st)))
+        if not _gone(st):
+            return (v, rd, parts, False, _retry(facts, "BONDED", "the bonded commit's "
+                                                + lp + " answered " + str(st)))
+        st2, _o = _get(rd, "original:file", _raw_url(orepo, osha, str(facts["original_path"])))
+        if _transient(st2):
+            return (v, rd, parts, False, _retry(facts, "ORIGINAL", "original file answered "
+                                                + str(st2)))
+        if st2 == 200:
+            v["bonded_gone"] = True
+            return (v, rd, parts, True, None)
+        return (v, rd, parts, False, _retry(facts, "BONDED_UNREADABLE",
+                                            "the bonded commit's " + lp + " answered "
+                                            + str(st) + " and the original answered "
+                                            + str(st2)))
 
     # 2. Both files, at their pinned commits. A file that is not there is an
     #    answer (the challenger named something that does not exist); a server
@@ -991,17 +1160,22 @@ def _measure(facts: dict) -> tuple:
     if v["original_file"] != "OK" or v["copied_file"] != "OK":
         return (v, rd, parts, True, None)
 
-    # 3. Was it copied? Code decides.
-    so = _shingles(_code_tokens(otext))
+    # 3. Was it copied? Code decides, with both measures (see SIMILARITY).
+    otok = _code_tokens(otext)
+    v["original_is_license"] = len(_license_kinds(" ".join(otok))) > 0
+    if v["original_is_license"]:
+        return (v, rd, parts, True, None)
+    so = _shingles(otok)
     sc = _shingles(_code_tokens(ctext))
-    common = 0
-    for s in so:
-        if s in sc:
-            common += 1
+    so2 = _shingles(_bare(otok))
+    sc2 = _shingles(_raw_tokens(ctext))
     v["shingles_original"] = len(so)
     v["shingles_copied"] = len(sc)
-    v["shingles_common"] = common
-    v["similarity_bps"] = _similarity_bps(len(so), len(sc), common)
+    v["shingles_common"] = _common(so, sc)
+    v["shingles_original_m2"] = len(so2)
+    v["shingles_copied_m2"] = len(sc2)
+    v["shingles_common_m2"] = _common(so2, sc2)
+    v["similarity_bps"] = _similarity_of(v)
     if _file_gates(v, license)[1] in ("TOO_SMALL_TO_MEASURE", "BELOW_SIMILARITY_THRESHOLD"):
         return (v, rd, parts, True, None)
 
@@ -1055,9 +1229,13 @@ def _measure(facts: dict) -> tuple:
 
 
 def _check_origin(v: dict, rd: list, facts: dict) -> typing.Any:
-    """Only for a would-be ATTRIBUTION_MISSING (see "ORDER OF THE GATES"): the
-    original repository existed before the bond was posted, and the original
-    commit is in its default-branch history. Returns a RETRY or None."""
+    """Only for a result that would pay the challenger (see "ORDER OF THE
+    GATES"): the original repository existed before the bond was posted, the
+    original commit is in its default-branch history, and that commit is dated
+    BEFORE the bonded commit (the copy cannot predate its original; the
+    bonded date is floored at the bonded repository's creation when the bond
+    was verified, so a backdated bonded commit cannot veto every challenge).
+    Returns a RETRY or None."""
     orepo = str(facts["original_repo"])
     osha = str(facts["original_sha"])
     st, fact = _get_api(rd, "original:repo", API + orepo, _created_fact)
@@ -1074,16 +1252,24 @@ def _check_origin(v: dict, rd: list, facts: dict) -> typing.Any:
         v["origin"] = "AFTER_BOND"
         return None
     st, fact = _get_api(rd, "original:history", API + orepo + "/compare/" + osha
-                          + "...HEAD?per_page=1", _history_fact)
+                        + "...HEAD?per_page=1", _history_fact)
     if _transient(st):
         return _retry(facts, "ORIGINAL", "GitHub compare API answered " + str(st))
     if _gone(st) or st == 422:
         v["origin"] = "NOT_IN_HISTORY"
         return None
     hist = _history_of(fact) if st == 200 else "UNPARSEABLE"
-    if hist == "UNPARSEABLE":
+    when = _commit_at(fact) if st == 200 else 0
+    if hist == "UNPARSEABLE" or (hist == "OK" and when <= 0):
         return _retry(facts, "ORIGINAL", "GitHub compare API answered " + str(st))
-    v["origin"] = hist
+    if hist != "OK":
+        v["origin"] = hist
+        return None
+    v["origin_commit_at"] = when
+    if when >= _as_int(facts["bonded_commit_at"], 0):
+        v["origin"] = "NEWER_THAN_COPY"
+        return None
+    v["origin"] = "OK"
     return None
 
 
@@ -1189,9 +1375,11 @@ def _collect_judge(facts: dict) -> dict:
 V_STR = ("facts_hash", "origin", "original_file", "copied_file", "licenses_found",
          "copyright_lines", "holders", "notice_files", "meets", "missing",
          "doc_lines", "content_hash", "outcome", "reason")
-V_INT = ("origin_created_at", "shingles_original", "shingles_copied",
-         "shingles_common", "similarity_bps")
-V_BOOL = ("holder_in_copy", "holder_in_notices", "model_called")
+V_INT = ("origin_created_at", "origin_commit_at", "shingles_original", "shingles_copied",
+         "shingles_common", "shingles_original_m2", "shingles_copied_m2",
+         "shingles_common_m2", "similarity_bps")
+V_BOOL = ("bonded_gone", "original_is_license", "holder_in_copy", "holder_in_notices",
+          "model_called")
 
 
 def _coherent(v: typing.Any, facts: dict) -> bool:
@@ -1224,11 +1412,17 @@ def _coherent(v: typing.Any, facts: dict) -> bool:
             return False
     elif v["meets"] != "" or v["missing"] != "":
         return False
-    if v["shingles_common"] > v["shingles_original"] or v["shingles_common"] > v["shingles_copied"]:
+    for a, b, c in (("shingles_original", "shingles_copied", "shingles_common"),
+                    ("shingles_original_m2", "shingles_copied_m2", "shingles_common_m2")):
+        if v[c] > v[a] or v[c] > v[b]:
+            return False
+    if v["similarity_bps"] != _similarity_of(v):
         return False
-    if v["similarity_bps"] != _similarity_bps(v["shingles_original"], v["shingles_copied"],
-                                              v["shingles_common"]):
-        return False
+    if v["bonded_gone"]:
+        # A forfeit read nothing of the bonded commit and asked no model.
+        if (v["original_file"] != "" or v["copied_file"] != "" or v["similarity_bps"] != 0
+                or v["licenses_found"] != "" or v["holders"] != ""):
+            return False
     if v["content_hash"] != _hash(v["doc_lines"]):
         return False
     # The origin is checked exactly when the result would pay the challenger.
@@ -1237,6 +1431,8 @@ def _coherent(v: typing.Any, facts: dict) -> bool:
     if (v["origin"] != ORIGIN_UNCHECKED) != _needs_origin(v, license):
         return False
     if v["origin"] in (ORIGIN_UNCHECKED, "UNAVAILABLE") and v["origin_created_at"] != 0:
+        return False
+    if v["origin"] not in ("OK", "NEWER_THAN_COPY") and v["origin_commit_at"] != 0:
         return False
     out, why = _decide(v, license)
     return v["outcome"] == out and v["reason"] == why and out in OUTCOMES
@@ -1285,7 +1481,7 @@ def _collect_bond(facts: dict) -> dict:
     sha = str(facts["sha"])
     out = {"ok": True, "facts_hash": _facts_hash(facts), "verdict": "",
            "reason": "", "license_path": "", "license_kinds": "",
-           "doc_lines": "", "content_hash": ""}
+           "commit_at": 0, "repo_created_at": 0, "doc_lines": "", "content_hash": ""}
 
     def done(verdict: str, reason: str) -> dict:
         out["verdict"] = verdict
@@ -1305,6 +1501,20 @@ def _collect_bond(facts: dict) -> dict:
         return _retry(facts, "BONDED", "GitHub compare API answered " + str(st))
     if hist != "OK":
         return done(B_REJECTED, "COMMIT_NOT_IN_DEFAULT_BRANCH_HISTORY")
+    committed = _commit_at(fact)
+    if committed <= 0:
+        return _retry(facts, "BONDED", "compare answer carried no commit date")
+    # The bonded commit's date is set by the bonded party. Floored at the
+    # repository's creation (GitHub's, uneditable), so backdating the commit
+    # cannot make every original look "newer than the copy".
+    st, fact = _get_api(rd, "bonded:repo", API + repo, _created_fact)
+    if _transient(st):
+        return _retry(facts, "BONDED", "GitHub repository API answered " + str(st))
+    if st != 200 or fact == "":
+        return done(B_REJECTED, "REPOSITORY_NOT_FOUND")
+    created = _epoch_from_iso(fact)
+    out["repo_created_at"] = created
+    out["commit_at"] = committed if committed > created else created
     st, body = _get(rd, "bonded:" + MARKER_PATH, _raw_url(repo, sha, MARKER_PATH))
     if _transient(st):
         return _retry(facts, "BONDED", MARKER_PATH + " answered " + str(st))
@@ -1325,6 +1535,7 @@ def _collect_bond(facts: dict) -> dict:
 
 B_STR = ("facts_hash", "verdict", "reason", "license_path", "license_kinds",
          "doc_lines", "content_hash")
+B_INT = ("commit_at", "repo_created_at")
 
 
 def _bond_coherent(v: typing.Any, facts: dict) -> bool:
@@ -1341,6 +1552,12 @@ def _bond_coherent(v: typing.Any, facts: dict) -> bool:
         return False
     if v["verdict"] == B_ACTIVE and v["license_path"] not in LICENSE_NAMES:
         return False
+    for k in B_INT:
+        x = v.get(k)
+        if not isinstance(x, int) or isinstance(x, bool) or x < 0:
+            return False
+    if v["verdict"] == B_ACTIVE and (v["commit_at"] <= 0 or v["commit_at"] < v["repo_created_at"]):
+        return False
     return v["content_hash"] == _hash(v["doc_lines"])
 
 
@@ -1351,6 +1568,9 @@ def _bond_agrees(lead: typing.Any, mine: typing.Any) -> bool:
         return False
     for k in B_STR:
         if str(lead.get(k, "")) != str(mine.get(k, "!")):
+            return False
+    for k in B_INT:
+        if _as_int(lead.get(k), -7) != _as_int(mine.get(k), -9):
             return False
     return True
 
@@ -1385,6 +1605,8 @@ class Bond:
     challenge_until: u64
     license_path: str
     license_kinds: str
+    commit_at: u64
+    repo_created_at: u64
     verify_reason: str
     verify_hash: str
     verify_docs: str
@@ -1395,6 +1617,7 @@ class Bond:
     slashed_wei: u256
     found_non_compliant: bool
     unreadable: bool
+    forfeited: bool
     withdrawn_at: u64
 
 
@@ -1421,13 +1644,19 @@ class Challenge:
     # --- the agreed vector (S1): every field below was compared exactly
     outcome: str
     reason: str
+    bonded_gone: bool
     origin: str
     origin_created_at: u64
+    origin_commit_at: u64
     original_file: str
     copied_file: str
+    original_is_license: bool
     shingles_original: u32
     shingles_copied: u32
     shingles_common: u32
+    shingles_original_m2: u32
+    shingles_copied_m2: u32
+    shingles_common_m2: u32
     similarity_bps: u32
     licenses_found: str
     copyright_lines: str
@@ -1450,6 +1679,7 @@ class Challenge:
     contest_bond_wei: u256
     contest_deadline: u64
     contest_log: str
+    settled_by: str
     # --- settlement
     finalized_at: u64
     paid_challenger_wei: u256
@@ -1482,6 +1712,7 @@ class LicenseGuard(gl.contract.Contract):
     challenges: gl.storage.DynArray[Challenge]
     bond_by_repo: gl.storage.TreeMap[str, u32]
     pair_used: gl.storage.TreeMap[str, u32]
+    path_slashed: gl.storage.TreeMap[str, u256]
     challenges_by_bond: gl.storage.TreeMap[str, gl.storage.DynArray[u32]]
 
     # --- counters (statistics; each moves after the last refusal, S5)
@@ -1626,7 +1857,8 @@ class LicenseGuard(gl.contract.Contract):
                 "original_sha": str(ch.original_sha),
                 "original_path": str(ch.original_path),
                 "license": str(ch.license),
-                "bond_posted_at": int(bond.posted_at)}
+                "bond_posted_at": int(bond.posted_at),
+                "bonded_commit_at": int(bond.commit_at)}
 
     def _bond_facts(self, bond: typing.Any) -> dict:
         return {"kind": "bond", "bond_id": int(bond.bond_id),
@@ -1669,6 +1901,20 @@ class LicenseGuard(gl.contract.Contract):
 
         return gl.vm.run_nondet(leader_fn, validator_fn)
 
+    def _holds(self, ch: typing.Any) -> bool:
+        """Does challenge `ch` still hold its copied file (review finding A3)?
+        While it is unjudged or under contest, yes; once it pays (or would
+        pay), for good. A challenge that ended without paying does NOT hold
+        it: otherwise the bonded party's own address could file a deliberately
+        wrong challenge first - its stake would come straight back to the
+        bonded party - and lock its copied files away from real challengers.
+        Anyone may judge an unjudged challenge at once, so the hold cannot be
+        kept by doing nothing."""
+        st = str(ch.status)
+        if st == C_FILED or st == C_CONTESTED:
+            return True
+        return str(ch.outcome) == ATTRIBUTION_MISSING
+
     def _close_on_bond(self, ch: typing.Any, now: int) -> None:
         bond = self._bond(ch.bond_id)
         if bond is None:
@@ -1692,13 +1938,20 @@ class LicenseGuard(gl.contract.Contract):
         out, why = _decide(v, str(ch.license))
         ch.outcome = out
         ch.reason = why
+        ch.settled_by = ""
+        ch.bonded_gone = bool(v["bonded_gone"])
         ch.origin = str(v["origin"])
         ch.origin_created_at = u64(int(v["origin_created_at"]))
+        ch.origin_commit_at = u64(int(v["origin_commit_at"]))
         ch.original_file = str(v["original_file"])
         ch.copied_file = str(v["copied_file"])
+        ch.original_is_license = bool(v["original_is_license"])
         ch.shingles_original = u32(int(v["shingles_original"]))
         ch.shingles_copied = u32(int(v["shingles_copied"]))
         ch.shingles_common = u32(int(v["shingles_common"]))
+        ch.shingles_original_m2 = u32(int(v["shingles_original_m2"]))
+        ch.shingles_copied_m2 = u32(int(v["shingles_copied_m2"]))
+        ch.shingles_common_m2 = u32(int(v["shingles_common_m2"]))
         ch.similarity_bps = u32(int(v["similarity_bps"]))
         ch.licenses_found = str(v["licenses_found"])
         ch.copyright_lines = str(v["copyright_lines"])
@@ -1714,13 +1967,19 @@ class LicenseGuard(gl.contract.Contract):
         ch.judged_at = u64(now)
 
     def _vector_of(self, ch: typing.Any) -> dict:
-        return {"origin": str(ch.origin),
+        return {"bonded_gone": bool(ch.bonded_gone),
+                "origin": str(ch.origin),
                 "origin_created_at": int(ch.origin_created_at),
+                "origin_commit_at": int(ch.origin_commit_at),
                 "original_file": str(ch.original_file),
                 "copied_file": str(ch.copied_file),
+                "original_is_license": bool(ch.original_is_license),
                 "shingles_original": int(ch.shingles_original),
                 "shingles_copied": int(ch.shingles_copied),
                 "shingles_common": int(ch.shingles_common),
+                "shingles_original_m2": int(ch.shingles_original_m2),
+                "shingles_copied_m2": int(ch.shingles_copied_m2),
+                "shingles_common_m2": int(ch.shingles_common_m2),
                 "similarity_bps": int(ch.similarity_bps),
                 "licenses_found": str(ch.licenses_found),
                 "copyright_lines": str(ch.copyright_lines),
@@ -1732,6 +1991,14 @@ class LicenseGuard(gl.contract.Contract):
                 "meets": str(ch.meets), "missing": str(ch.missing),
                 "doc_lines": str(ch.doc_lines),
                 "content_hash": str(ch.content_hash)}
+
+    def _outcome_of(self, ch: typing.Any) -> str:
+        """The outcome money follows: derived from the stored vector (S2),
+        except a contest settled at its deadline against the project (A5),
+        which has no reading to derive from."""
+        if str(ch.settled_by) != "":
+            return str(ch.outcome)
+        return _decide(self._vector_of(ch), str(ch.license))[0]
 
     # --- bonds -----------------------------------------------------------------
 
@@ -1829,6 +2096,8 @@ class LicenseGuard(gl.contract.Contract):
             b.challenge_until = u64(now + int(self.challenge_window_s))
             b.license_path = str(out["license_path"])
             b.license_kinds = str(out["license_kinds"])
+            b.commit_at = u64(int(out["commit_at"]))
+            b.repo_created_at = u64(int(out["repo_created_at"]))
             return {"status": "OK", "bond_id": int(b.bond_id), "outcome": B_ACTIVE,
                     "challenge_until": int(b.challenge_until),
                     "license_path": str(b.license_path)}
@@ -1870,7 +2139,14 @@ class LicenseGuard(gl.contract.Contract):
     def withdraw_bond(self, bond_id: typing.Any) -> typing.Any:
         """The bonded party takes the remainder back - only when no challenge is
         open, the challenge window has ended, and `unbond_delay_s` has passed
-        since the last challenge closed (threat 2). Works while paused."""
+        since the last challenge closed (threat 2). Works while paused.
+
+        A FORFEIT (the bonded commit taken away, review finding A4) is a
+        challenge like any other: while it is open - judged, contestable,
+        contested, not yet finalized - nothing can be withdrawn, and the
+        slash is paid before the remainder is. The remainder of a forfeited
+        bond is NOT locked forever: a lock with no exit would keep value in the
+        contract that nobody could ever get out (D3, S10)."""
         self._bank()
         sender = gl.message.sender_address
         now = self._now()
@@ -1941,6 +2217,10 @@ class LicenseGuard(gl.contract.Contract):
         cpath, why = _norm_path(copied_path)
         if why != "":
             return self._refuse("copied " + why)
+        if _is_notice_name(cpath) or _is_notice_name(opath):
+            return self._refuse("license, notice and third-party-notice files cannot be "
+                                "challenged as copied or original files: two license "
+                                "texts are alike by design")
         lic = str(license if license is not None else "").strip().upper()
         if lic not in LICENSES:
             return self._refuse("unsupported license " + _short(lic, 40) + "; use one of "
@@ -1956,12 +2236,16 @@ class LicenseGuard(gl.contract.Contract):
         if orepo.lower() == str(b.repo_key):
             return self._refuse("the original must come from another repository than "
                                 "the bonded one")
-        key = _pair_key(int(b.bond_id), orepo, opath, cpath)
-        if int(self.pair_used.get(key) or 0) > 0:
-            return self._refuse("this file pair was already challenged on bond #"
-                                + str(int(b.bond_id)) + " (challenge #"
-                                + str(int(self.pair_used.get(key) or 0))
-                                + "); no refiles")
+        key = _pair_key(int(b.bond_id), cpath)
+        holder = self._challenge(int(self.pair_used.get(key) or 0))
+        if holder is not None and self._holds(holder):
+            return self._refuse(cpath + " on bond #" + str(int(b.bond_id))
+                                + " is already challenged (challenge #"
+                                + str(int(holder.challenge_id)) + ", "
+                                + str(holder.status).lower() + ", "
+                                + (str(holder.outcome) if str(holder.outcome) != "" else "unjudged")
+                                + "); one challenge per copied file, and a copied file "
+                                "that has paid is never paid again")
         need = int(self.challenge_bond_wei)
         if value < need:
             return self._refuse("a challenge needs a bond of " + str(need) + " wei ("
@@ -2035,6 +2319,8 @@ class LicenseGuard(gl.contract.Contract):
         if not _coherent(out, facts):
             return self._refuse("the validators did not return a usable verdict; "
                                 "nothing changed")
+        if bool(out.get("bonded_gone")):
+            b.unreadable = True
         if st == C_FILED:
             self._store_vector(c, out, now)
             c.status = C_PROVISIONAL
@@ -2118,6 +2404,8 @@ class LicenseGuard(gl.contract.Contract):
             c.challenger_contested = True
         c.contest_side = side
         c.contester = sender
+        c.last_retry_side = ""
+        c.last_retry_why = ""
         c.contest_bond_wei = u256(need)
         c.contest_deadline = u64(now + int(self.deadline_s))
         c.status = C_CONTESTED
@@ -2133,8 +2421,10 @@ class LicenseGuard(gl.contract.Contract):
         Permissionless; works while paused.
 
           ATTRIBUTION_MISSING  challenger: challenge bond + SLASH_BPS of the
-                               bond (capped by what remains); bond becomes
-                               NON_COMPLIANT
+                               bond, at most ONCE PER COPIED FILE across every
+                               challenge that ever names it (review finding
+                               A3), capped by what remains; bond becomes
+                               NON_COMPLIANT. A forfeit pays the same.
           COMPLIANT/NOT_DERIVED  the challenge bond goes to the bonded party
           INCONCLUSIVE         the challenge bond goes back to the challenger"""
         self._bank()
@@ -2156,13 +2446,20 @@ class LicenseGuard(gl.contract.Contract):
         if b is None:
             return self._refuse("the challenge's bond is missing")
         # S2 again: the money follows the outcome derived from the stored vector.
-        outcome, _why = _decide(self._vector_of(c), str(c.license))
+        outcome = self._outcome_of(c)
         stake = int(c.bond_wei)
         c.bond_wei = u256(0)
         if outcome == ATTRIBUTION_MISSING:
-            slash = int(b.amount_wei) * SLASH_BPS // BPS
+            key = str(c.pair_key)
+            done = int(self.path_slashed.get(key) or 0)
+            slash = int(b.amount_wei) * SLASH_BPS // BPS - done
+            if slash < 0:
+                slash = 0
             if slash > int(b.remaining_wei):
                 slash = int(b.remaining_wei)
+            self.path_slashed[key] = u256(done + slash)
+            if str(c.reason).startswith("FORFEIT") or str(c.settled_by) != "":
+                b.forfeited = True
             b.remaining_wei = u256(int(b.remaining_wei) - slash)
             b.slashed_wei = u256(int(b.slashed_wei) + slash)
             b.found_non_compliant = True
@@ -2192,11 +2489,18 @@ class LicenseGuard(gl.contract.Contract):
 
         A challenge nobody could judge by its deadline ends INCONCLUSIVE: the
         challenge bond goes back to the challenger and the bond's lock is
-        released (threat 5). If the last failure was the bonded side's (its
-        commit could not be read), the bond's badge is suspended.
+        released (threat 5). Only a real outage gets here: a bonded commit that
+        was taken away is a forfeit at judging time (review finding A4).
 
-        A contest nobody could re-read by its deadline is dropped: its bond is
-        refunded and the result it contested stands."""
+        A contest nobody could re-read by its deadline:
+          - if the bonded commit was unreadable (404/410/451 - the bonded
+            party's doing), it is settled AGAINST THE PROJECT (review finding
+            A5): a challenger's contest wins (ATTRIBUTION_MISSING money,
+            contest bond refunded) unless the result was decided on the
+            original's own facts (an ORIGIN_* reason, which the project did not
+            cause); a project's contest bond goes to the challenger;
+          - otherwise (an outage) it is dropped: its bond is refunded and the
+            result it contested stands."""
         self._bank()
         now = self._now()
         c = self._challenge(challenge_id)
@@ -2222,8 +2526,6 @@ class LicenseGuard(gl.contract.Contract):
                                              != "" else "UNJUDGED")
             c.status = C_FINAL
             c.finalized_at = u64(now)
-            if str(c.last_retry_side) == "BONDED":
-                b.unreadable = True
             self._close_on_bond(c, now)
             self.total_stalled = u256(int(self.total_stalled) + 1)
             return {"status": "OK", "challenge_id": cid, "outcome": INCONCLUSIVE,
@@ -2235,15 +2537,30 @@ class LicenseGuard(gl.contract.Contract):
                                     "re-read until " + str(int(c.contest_deadline)))
             amt = int(c.contest_bond_wei)
             c.contest_bond_wei = u256(0)
-            self._release(c.contester, amt)
+            side = str(c.contest_side)
+            gone = str(c.last_retry_side) == "BONDED_UNREADABLE"
+            if gone:
+                b.unreadable = True
+            if gone and side == SIDE_CHALLENGER and not str(c.reason).startswith("ORIGIN_"):
+                self._release(c.contester, amt)
+                c.outcome = ATTRIBUTION_MISSING
+                c.reason = "CONTEST_STALLED_BONDED_COMMIT_WITHDRAWN"
+                c.settled_by = "STALL"
+                verdict = "WON_AT_DEADLINE_BONDED_UNREADABLE"
+            elif gone and side == SIDE_PROJECT:
+                self._release(c.challenger, amt)
+                verdict = "LOST_AT_DEADLINE_BONDED_UNREADABLE"
+            else:
+                self._release(c.contester, amt)
+                verdict = "DROPPED_AT_DEADLINE"
             c.contest_log = (str(c.contest_log) + ("; " if str(c.contest_log) != "" else "")
-                             + str(c.contest_side) + ":DROPPED_AT_DEADLINE")
+                             + side + ":" + verdict)
             c.contest_side = ""
             c.status = C_PROVISIONAL
             self._reopen(c, now)
             self.total_stalled = u256(int(self.total_stalled) + 1)
-            return {"status": "OK", "challenge_id": cid, "contest": "DROPPED",
-                    "refunded_wei": str(amt), "outcome": str(c.outcome),
+            return {"status": "OK", "challenge_id": cid, "contest": verdict,
+                    "contest_bond_wei": str(amt), "outcome": str(c.outcome),
                     "contest_until": int(c.contest_until)}
         return self._refuse("challenge #" + str(cid) + " is " + st + "; not stalled")
 
@@ -2288,7 +2605,7 @@ class LicenseGuard(gl.contract.Contract):
             return False
         bid = int(self.bond_by_repo.get(name.lower()) or 0)
         b = self._bond(bid)
-        if b is None or str(b.status) != B_ACTIVE or bool(b.unreadable):
+        if b is None or str(b.status) != B_ACTIVE or bool(b.unreadable) or bool(b.forfeited):
             return False
         now = self._now()
         return now > 0 and now < int(b.challenge_until)
@@ -2311,7 +2628,9 @@ class LicenseGuard(gl.contract.Contract):
                 "last_closed_at": int(b.last_closed_at),
                 "slashed_wei": str(int(b.slashed_wei)),
                 "found_non_compliant": bool(b.found_non_compliant),
-                "unreadable": bool(b.unreadable), "withdrawn_at": int(b.withdrawn_at),
+                "unreadable": bool(b.unreadable), "forfeited": bool(b.forfeited),
+                "commit_at": int(b.commit_at), "repo_created_at": int(b.repo_created_at),
+                "withdrawn_at": int(b.withdrawn_at),
                 "unbond_delay_s": int(self.unbond_delay_s)}
 
     @gl.public.view
@@ -2350,7 +2669,7 @@ class LicenseGuard(gl.contract.Contract):
                     "contest_side": str(c.contest_side),
                     "contest_bond_wei": str(int(c.contest_bond_wei)),
                     "contest_deadline": int(c.contest_deadline),
-                    "contest_log": str(c.contest_log),
+                    "contest_log": str(c.contest_log), "settled_by": str(c.settled_by),
                     "finalized_at": int(c.finalized_at),
                     "paid_challenger_wei": str(int(c.paid_challenger_wei)),
                     "paid_project_wei": str(int(c.paid_project_wei)),
@@ -2397,11 +2716,10 @@ class LicenseGuard(gl.contract.Contract):
                     "outcome": str(c.outcome), "reason": str(c.reason),
                     "consistent": facts_ok}
         hash_ok = _hash(str(c.doc_lines)) == str(c.content_hash)
-        sim = _similarity_bps(int(c.shingles_original), int(c.shingles_copied),
-                              int(c.shingles_common))
+        sim = _similarity_of(v)
         sim_ok = sim == int(c.similarity_bps)
         out, why = _decide(v, str(c.license))
-        stalled = str(c.reason).startswith("DEADLINE_PASSED")
+        stalled = str(c.reason).startswith("DEADLINE_PASSED") or str(c.settled_by) != ""
         outcome_ok = stalled or (out == str(c.outcome) and why == str(c.reason))
         model_ok = bool(c.model_called) == _needs_model(v, str(c.license))
         return {"found": True, "judged": True, "facts_hash_ok": facts_ok,
@@ -2468,6 +2786,11 @@ class LicenseGuard(gl.contract.Contract):
                 "license_files": list(LICENSE_NAMES), "notice_files": list(NOTICE_NAMES),
                 "third_party_files": list(THIRD_PARTY_NAMES),
                 "marker_file": MARKER_PATH,
+                "refused_filenames": "stem in " + ",".join(NOTICE_STEMS) + " or prefix "
+                + ",".join(NOTICE_PREFIXES) + " (any case, any extension)",
+                "similarity": "max(M1 comments stripped from both, M2 original stripped vs "
+                "whole copy without / * #)",
+                "forfeit": "bonded commit 404/410/451 while the original is readable",
                 "model_rule": ("The model never decides who pays. It only judges "
                                "whether the attribution meets the license; code "
                                "decides whether the file was copied and moves the money.")}

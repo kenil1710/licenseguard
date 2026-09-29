@@ -231,11 +231,14 @@ class GitHub:
                            "stargazers_count": stars, "pushed_at": iso(T0)})
         lg_stub.WEB[API + repo] = (status, body)
 
-    def history(self, repo, sha, status="identical", behind=0, http=200):
+    def history(self, repo, sha, status="identical", behind=0, http=200,
+                date=iso(T0 - 5 * 365 * 86400)):
         if http != 200:
             lg_stub.WEB[compare_url(repo, sha)] = (http, '{"message":"Not Found"}')
             return
         body = json.dumps({"status": status, "ahead_by": 0, "behind_by": behind,
+                           "base_commit": {"sha": sha, "commit": {
+                               "author": {"date": date}, "committer": {"date": date}}},
                            "merge_base_commit": {"sha": sha}, "commits": [], "files": []})
         lg_stub.WEB[compare_url(repo, sha)] = (200, body)
 
@@ -320,18 +323,21 @@ class World:
     # --- scenario helpers
     def original(self, repo="ada/slugify", sha=SHA_O, path="index.js", text=ORIGINAL,
                  license_text=ORIG_LICENSE, license_path="license",
-                 created=iso(T0 - 8 * 365 * 86400), history="identical", behind=0):
+                 created=iso(T0 - 8 * 365 * 86400), history="identical", behind=0,
+                 committed=iso(T0 - 5 * 365 * 86400)):
         self.gh.put(repo, sha, path, text)
         if license_text is not None:
             self.gh.put(repo, sha, license_path, license_text)
         self.gh.repo(repo, created=created)
-        self.gh.history(repo, sha, status=history, behind=behind)
+        self.gh.history(repo, sha, status=history, behind=behind, date=committed)
         return (repo, sha, path)
 
     def bonded_repo(self, repo="acme/app", sha=SHA_B, owner=PROJ, files=None,
                     license_text=PROJ_LICENSE, license_path="LICENSE", marker=True,
-                    history="identical", behind=0):
-        self.gh.history(repo, sha, status=history, behind=behind)
+                    history="identical", behind=0, committed=iso(T0 - 86400),
+                    created=iso(T0 - 2 * 365 * 86400)):
+        self.gh.history(repo, sha, status=history, behind=behind, date=committed)
+        self.gh.repo(repo, created=created)
         if marker:
             self.gh.put(repo, sha, ".licenseguard", "licenseguard bonder: " + owner + "\n")
         if license_text is not None:

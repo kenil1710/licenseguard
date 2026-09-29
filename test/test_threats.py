@@ -3,7 +3,9 @@
   1. Challenger points at a file outside the bonded repo/commit: refused
   2. Bonded party withdraws the bond during or right after a challenge:
      refused until the unbond delay
-  3. Two challenges on the same file pair: refused
+  3. Two challenges on the same file pair: refused (since review finding A3,
+     "the pair" is the COPIED FILE in the bonded commit: one open challenge
+     per copied file, and a copied file that has paid is never paid again)
   4. Anything paying twice via contest + finalize: impossible
   5. A file that never loads: ends INCONCLUSIVE at the deadline, all bonds
      released
@@ -162,10 +164,11 @@ class Threat3_DuplicatePair(unittest.TestCase):
         self.cid = self.w.challenge_ok(self.bid, "src/slugify.js")
 
     def dup(self, **kw):
+        n = len(self.w.c.challenges)
         out = self.w.challenge(self.bid, "src/slugify.js", **kw)
         self.assertEqual(out["status"], "REJECTED", out)
         self.assertIn("already challenged", out["reason"])
-        self.assertEqual(len(self.w.c.challenges), 1)
+        self.assertEqual(len(self.w.c.challenges), n)
 
     def test_same_challenger(self):
         self.dup()
@@ -182,25 +185,75 @@ class Threat3_DuplicatePair(unittest.TestCase):
     def test_case_of_repo_name(self):
         self.dup(original=("ADA/Slugify", SHA_O, "index.js"))
 
-    def test_after_inconclusive_no_refile(self):
-        self.w.advance(DAY + 1)
-        self.w.call(TRIGGER, "settle_stalled", self.cid)
-        self.dup()
+    def test_other_original_path_while_open(self):
+        self.dup(original=("ada/slugify", SHA_O, "other.js"))
 
-    def test_after_final(self):
+    def test_fork_of_the_original_refused(self):
+        self.w.original(repo="fan/slugify")
+        self.dup(original=("fan/slugify", SHA_O, "index.js"), who=CHAL2)
+
+    def test_after_paid_never_again(self):
+        self.w.judge(self.cid)
+        self.w.finalize(self.cid)
+        out = self.w.challenge(self.bid, "src/slugify.js", who=CHAL2)
+        self.assertEqual(out["status"], "REJECTED")          # (the bond is NON_COMPLIANT too)
+        self.assertTrue(self.w.c._holds(self.w.ch(self.cid)))  # and the file stays held
+
+    def test_while_paying_result_contestable(self):
+        self.w.judge(self.cid)
+        self.dup(who=CHAL2)
+
+    def test_while_contested(self):
         c2 = self.w.challenge_ok(self.bid, "src/app.js")
         self.w.judge(c2)
-        self.w.finalize(c2)
+        self.w.call(CHAL, "contest", c2, value=int(self.w.c.contest_bond_wei))
         out = self.w.challenge(self.bid, "src/app.js", who=CHAL2)
         self.assertEqual(out["status"], "REJECTED")
-        self.assertIn("already challenged", out["reason"])
+
+    def test_after_losing_result_others_may_challenge(self):
+        """A losing challenge does not lock the copied file: otherwise the
+        bonded party's own address could file a deliberately wrong challenge
+        (its stake comes straight back to the bonded party) and lock its
+        copied files away from real challengers."""
+        c2 = self.w.challenge_ok(self.bid, "src/app.js")
+        self.assertEqual(self.w.judge(c2)["outcome"], "NOT_DERIVED")
+        self.assertEqual(self.w.challenge(self.bid, "src/app.js", who=CHAL2)["status"], "OK")
+
+    def test_sock_puppet_cannot_lock_a_copied_file(self):
+        w, bid = standard()
+        w.gh.put("junk/repo", SHA_O, "index.js", UNRELATED)
+        w.original(repo="junk/repo", text=UNRELATED)
+        sock = w.challenge_ok(bid, "src/slugify.js", who=OUTSIDER,
+                              original=("junk/repo", SHA_O, "index.js"))
+        self.assertEqual(w.judge(sock)["outcome"], "NOT_DERIVED")
+        real = w.challenge_ok(bid, "src/slugify.js", who=CHAL)
+        self.assertEqual(w.judge(real)["outcome"], "ATTRIBUTION_MISSING")
+
+    def test_after_inconclusive_outage_refile_allowed(self):
+        self.w.advance(DAY + 1)
+        self.w.call(TRIGGER, "settle_stalled", self.cid)
+        self.assertEqual(self.w.challenge(self.bid, "src/slugify.js")["status"], "OK")
 
     def test_different_copied_path_allowed(self):
         self.assertEqual(self.w.challenge(self.bid, "src/app.js")["status"], "OK")
 
-    def test_different_original_path_allowed(self):
-        self.assertEqual(self.w.challenge(self.bid, "src/slugify.js",
-                                          original=("ada/slugify", SHA_O, "other.js"))["status"], "OK")
+    def test_slash_capped_per_copied_file_across_takeovers(self):
+        """Even when a losing holder's contest later flips to paying while a
+        newer challenge on the same copied file also pays, the copied file is
+        slashed once."""
+        w, bid = standard()
+        c1 = w.challenge_ok(bid, "src/app.js")
+        w.judge(c1)                                           # NOT_DERIVED: path free
+        c2 = w.challenge_ok(bid, "src/app.js", who=CHAL2)
+        w.call(CHAL, "contest", c1, value=int(w.c.contest_bond_wei))
+        w.gh.put("acme/app", SHA_B, "src/app.js", COPY_STRIPPED)   # simulated change
+        self.assertEqual(w.judge(c1)["contest"], "CHANGED")
+        self.assertEqual(w.judge(c2)["outcome"], "ATTRIBUTION_MISSING")
+        w.finalize(c1)
+        w.finalize(c2)
+        self.assertEqual(int(w.bd(bid).slashed_wei), GEN // 2)
+        self.assertEqual(int(w.ch(c2).slash_wei), 0)
+        self.assertEqual(int(w.ch(c2).paid_challenger_wei), int(w.c.challenge_bond_wei))
 
     def test_same_pair_on_a_new_bond_allowed(self):
         self.w.advance(30 * DAY)
@@ -315,9 +368,15 @@ class Threat5_FileNeverLoads(unittest.TestCase):
         self.run_to_deadline(raw("ada/slugify", SHA_O, "index.js"), 503)
         self.assertEqual(self.w.owed(CHAL), int(self.w.c.challenge_bond_wei))
 
-    def test_bonded_repo_goes_private(self):
-        self.run_to_deadline(raw("acme/app", SHA_B, "LICENSE"), 404)
-        self.assertTrue(self.w.bd(self.bid).unreadable)
+    def test_bonded_host_outage(self):
+        self.run_to_deadline(raw("acme/app", SHA_B, "LICENSE"), 502)
+        self.assertEqual(self.w.owed(CHAL), int(self.w.c.challenge_bond_wei))
+        self.assertFalse(self.w.bd(self.bid).unreadable)
+
+    def test_bonded_repo_going_private_is_not_a_stall(self):
+        """Review finding A4: it is a forfeit, not a wait."""
+        self.w.gh.fail(raw("acme/app", SHA_B, "LICENSE"), 404)
+        self.assertEqual(self.w.judge(self.cid)["reason"], "FORFEIT_BONDED_COMMIT_WITHDRAWN")
 
     def test_github_api_rate_limited_forever(self):
         self.run_to_deadline(API + "ada/slugify", 403)

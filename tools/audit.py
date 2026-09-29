@@ -132,8 +132,10 @@ def main():
 
     print("\n- design rules")
     g = "Design rules"
-    check(g, "one contest per side, no refiles (pair key excludes commit and license)",
-          "project_contested" in SRC and "no refiles" in SRC, "contest flags per side; _pair_key(bond, repo, path, copied)")
+    check(g, "one contest per side; one open challenge per copied file; a paid copied file is never paid again",
+          "project_contested" in SRC and "def _pair_key(bond_id: int, copied_path: str)" in SRC
+          and "def _holds(" in SRC and "path_slashed" in SRC,
+          "contest flags per side; _pair_key(bond, copied_path); _holds; slash capped per copied file (path_slashed)")
     check(g, "all evidence pinned to a 40-char commit, no mutable URL for files",
           "_raw_url(" in SRC and "_is_sha(" in ast.unparse(METHODS["challenge"]) and "_is_sha(" in ast.unparse(METHODS["post_bond"]),
           "files only via raw.githubusercontent.com/{repo}/{sha}/{path}; SHAs validated at filing")
@@ -154,6 +156,19 @@ def main():
                        ("Threat8_ModelSeesOnlyWhatItNeeds", "8. model sees only license text and files, never the challenger's words")):
         ok, ev = run("test_threats", cls)
         check(g, label, ok, ev)
+
+    print("\n- independent review, round 1 (test/test_attacks.py)")
+    g = "Review round 1"
+    for cls, label in (("A1_LicenseFileAsTheCopiedFile", "A1 license/notice files can't be the copied (or original) file; a license text is never an original"),
+                       ("A2_CommentPrefixHidesTheCopy", "A2 comment tricks can't hide a copy (inline stripping + whole-copy measure)"),
+                       ("A3_SameViolationPaidTwiceViaAFork", "A3 one violation can't be paid twice via forks (key = bond + copied file, slash cap per file)"),
+                       ("A4_PrivateRepoIsAForfeit", "A4 going private is a forfeit; only outages end INCONCLUSIVE; withdraw blocked while open"),
+                       ("A5_ProjectCannotVetoAContest", "A5 the project can't veto a contest"),
+                       ("Also_DirectionOfCopying", "original commit dated before the bonded commit (paying paths only; bonded date floored)")):
+        ok, ev = run("test_attacks", cls)
+        check(g, label, ok, ev)
+    ok, ev = run("test_attacks")
+    check(g, "test_attacks.py whole file in the suite", ok, ev)
 
     print("\n- chain")
     g = "On chain"
@@ -195,17 +210,26 @@ def main():
               c and "challenge #%s %s; similarity %s bps; paid project %s wei" % (c["challenge_id"], c["reason"], c["similarity_bps"], c["paid_project_wei"]))
         held = [c for c in A.get("final", {}).get("challenges", []) if "HELD" in c.get("contest_log", "")]
         check(g, "a contest that held", bool(held), held and "challenge #%s: %s" % (held[0]["challenge_id"], held[0]["contest_log"]))
-        bc = (B.get("final", {}).get("challenges") or [None])[0]
+        bcs = B.get("final", {}).get("challenges") or []
+        fo = [c for c in bcs if c.get("reason") == "FORFEIT_BONDED_COMMIT_WITHDRAWN"]
+        check(g, "private bonded repo = forfeit paying the challenger (A4)", bool(fo) and int(fo[0]["paid_challenger_wei"]) > 0
+              and int(fo[0]["slash_wei"]) > 0 and fo[0]["verify"]["consistent"],
+              fo and "challenge #%s %s; origin %s; paid challenger %s wei (slash %s); bond forfeited %s"
+              % (fo[0]["challenge_id"], fo[0]["reason"], fo[0]["origin"], fo[0]["paid_challenger_wei"], fo[0]["slash_wei"],
+                 (B["final"]["bonds"][0] or {}).get("forfeited")))
+        un = [c for c in bcs if str(c.get("reason", "")).startswith("DEADLINE_PASSED")]
         retry = [s for s in B.get("steps", []) if s["fn"] == "judge" and isinstance(s.get("returned"), dict) and s["returned"].get("outcome") == "RETRY"]
-        check(g, "fetch failure reaching its deadline and releasing", bc is not None and bc["outcome"] == "INCONCLUSIVE"
-              and bc["reason"].startswith("DEADLINE_PASSED") and bool(retry),
-              bc and "challenge #%s %s; RETRY side %s (%s); bond unreadable %s; paid back %s wei"
-              % (bc["challenge_id"], bc["reason"], bc["last_retry_side"], bc["last_retry_why"],
-                 (B["final"]["bonds"][0] or {}).get("unreadable"), bc["paid_challenger_wei"]))
+        check(g, "no source readable -> RETRY to the deadline -> INCONCLUSIVE, both refunded", bool(un) and bool(retry)
+              and int(un[0]["paid_challenger_wei"]) == int(un[0].get("paid_challenger_wei", 0)) and int(un[0]["paid_project_wei"]) == 0,
+              un and "challenge #%s %s; RETRY side %s (%s); refunded %s wei; slash 0"
+              % (un[0]["challenge_id"], un[0]["reason"], un[0]["last_retry_side"], un[0]["last_retry_why"][:80], un[0]["paid_challenger_wei"]))
+        wr = [s for s in B.get("steps", []) if s["label"].startswith("REFUSAL: withdraw")]
+        check(g, "withdraw refused while a forfeit is open", bool(wr) and (wr[0].get("returned") or {}).get("status") == "REJECTED",
+              wr and (wr[0].get("returned") or {}).get("reason", ""))
         refusals = [s for s in A.get("steps", []) if s["label"].startswith("REFUSAL")]
-        check(g, "mechanical refusals on chain (threats 1 and 3)", len(refusals) == 2 and all(
+        check(g, "mechanical refusals on chain: path escape, fork of the original (A3), LICENSE vs LICENSE (A1)", len(refusals) == 3 and all(
             isinstance(s.get("returned"), dict) and s["returned"].get("status") == "REJECTED" for s in refusals),
-            "; ".join("%s: %s" % (s["label"], (s.get("returned") or {}).get("reason", "")[:90]) for s in refusals))
+            "; ".join("%s: %s" % (s["label"], (s.get("returned") or {}).get("reason", "")[:80]) for s in refusals))
         for lane, L in (("A", A), ("B", B)):
             st = L.get("final", {}).get("stats", {})
             check(g, "lane %s (%s) drained to 0" % (lane, L.get("address")), st.get("books_zero") and st.get("ledger_ok")

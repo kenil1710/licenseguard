@@ -12,7 +12,7 @@ import unittest
 import lg_stub
 from lg_world import (LG, World, OWNER, PROJ, PROJ2, CHAL, CHAL2, TRIGGER, OUTSIDER, SHA_B,
                       SHA_B2, SHA_O, GEN, ORIGINAL, UNRELATED, COPY_STRIPPED, COPY_ATTRIBUTED,
-                      COPY_HOLDER_ONLY, raw, compare_url, API, addr)
+                      COPY_HOLDER_ONLY, PROJ_LICENSE, raw, compare_url, API, addr)
 
 PROJ3 = addr("7")
 PROJECTS = [(PROJ, "acme/app", SHA_B), (PROJ2, "beta/lib", SHA_B2), (PROJ3, "gamma/tool", "d" * 40)]
@@ -54,7 +54,7 @@ def lifecycle(seed: int, steps: int = 160):
             lg_stub.WEB.pop(u, None) if False else None
         if rng.random() < 0.15:
             u = rng.choice(FLAKY)
-            lg_stub.SEQ[u] = [(rng.choice([0, 403, 429, 500, 503]), "x")] * rng.choice([1, 2, 4])
+            lg_stub.SEQ[u] = [(rng.choice([0, 403, 404, 404, 429, 500, 503]), "x")] * rng.choice([1, 2, 4])
 
     def live(*states):
         ids = [i + 1 for i, c in enumerate(w.c.challenges) if c.status in states]
@@ -104,12 +104,18 @@ def lifecycle(seed: int, steps: int = 160):
             w.call(rng.choice(actors), "claim")
         elif op < 0.89:
             w.call(OWNER, "set_paused", rng.random() < 0.5)
+        elif op < 0.92:
+            _o, repo, sha = rng.choice(PROJECTS)             # a bonded repo goes private / comes back
+            url = raw(repo, sha, "LICENSE")
+            lg_stub.WEB[url] = (404, "404: Not Found") if rng.random() < 0.6 else (200, PROJ_LICENSE)
         else:
             w.advance(rng.choice([30, 200, 700, 3000, DAY // 2, DAY + 5]))
 
     # --- close everything out, through public methods only ---------------------
     lg_stub.SEQ.clear()
     lg_stub.MODEL.serve("YES")
+    for _o, repo, sha in PROJECTS:
+        lg_stub.WEB[raw(repo, sha, "LICENSE")] = (200, PROJ_LICENSE)
     for _round in range(6):
         w.advance(4 * DAY)
         for i in range(1, len(w.c.bonds) + 1):
@@ -190,6 +196,9 @@ class TestRandomCoverage(unittest.TestCase):
 
     def test_deadline_exit_reached(self):
         self.assertTrue(any(r.startswith("DEADLINE_PASSED") for r in self.reasons))
+
+    def test_forfeit_reached(self):
+        self.assertIn("FORFEIT_BONDED_COMMIT_WITHDRAWN", self.reasons)
 
     def test_pinned_missing_reached(self):
         self.assertIn("NO_ATTRIBUTION_FOUND", self.reasons)

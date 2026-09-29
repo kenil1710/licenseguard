@@ -1,0 +1,10 @@
+raw_8mb                      ACCEPTED     33s http=200 len=8388621  hdr={"cache-control": "b'max-age=300'", "etag": "b'W/\"b51a787da81c84fb1d14b75912db17c7b7f438b070fa78f75fb643987456a78d\"'", 
+GenLayer RPC error (sim_estimateTransactionFees): Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+raw_30mb                     ACCEPTED     68s http=200 len=31457286  hdr={"cache-control": "b'max-age=300'", "etag": "b'W/\"48a47c5412f7865789264e5899c72a82d6a7652965b4f754bc4034177c69e62c\"'", 
+GenLayer RPC error (sim_estimateTransactionFees): Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+GenLayer RPC error (sim_estimateTransactionFees): Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+
+Details: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+Ver)
+raw_90mb                     ACCEPTED    269s http=200 len=94371875  hdr={"cache-control": "b'max-age=300'", "etag": "b'W/\"b710020bab988c2388eb5bb2c84e934ea0fb2a2cc2188b51ec6fac84db33da86\"'", 
+lanes: 0x5e2bf5badD187131815E79c04618767bcA354335,0xb62ab2Fc2F107298ee4C31b7bD273e4b70a47109,0xe4EE5F00FDC7Afed66CBC27eE0096169Eb244C5e
