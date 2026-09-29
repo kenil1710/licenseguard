@@ -13,7 +13,8 @@ moved wrongly. A finding without a concrete sequence is not a finding.
 A project posts a bond on `owner/repo@<40-hex sha>` (`post_bond`, payable). The
 bond is PENDING until `verify_bond` (validators: the sha is in the repo's
 default-branch history via `compare/{sha}...HEAD`; the commit has a LICENSE
-file; `.licenseguard` at the commit names the bonder's address). Anyone may
+file; `.licenseguard` names the bonder's address on its own line at the
+commit and at the repository's current head). Anyone may
 `challenge(bond_id, original_repo, original_sha, original_path, copied_path,
 license)` with a challenge bond. `judge` (permissionless) makes validators read
 the pinned files from `raw.githubusercontent.com`, measure 5-token shingle
@@ -49,6 +50,15 @@ fixes changed these rules - attack them too:
 - **Direction:** the original commit must predate the bonded commit, whose
   date is floored at the bonded repo's `created_at`. Commit dates are
   forgeable by whoever commits.
+
+## Since the identity fixes (policy 1.2.0)
+
+- A PENDING bond reserves nothing; the first to verify takes the slot and
+  rival pending bonds are rejected (25 per call, the rest on touch). Can a
+  squatter still delay or grief the owner?
+- `.licenseguard` must name the bonder on its own line at the bonded commit
+  AND at `raw.githubusercontent.com/{repo}/HEAD/.licenseguard` (300 s CDN
+  cache). Raw checks run before any API call.
 
 ## Rules the contract claims (try to break each)
 

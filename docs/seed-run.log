@@ -1,0 +1,57 @@
+seed started 2026-09-29T18:49:26.308Z
++  19s [A] SQUATTER post_bond on stripped (first) ACCEPTED    14s {"amount_wei":"1000000000000000000","bond_id":1,"bond_status":"PENDING","next":"verify_bond(1) - anyone may call it","status":"OK"}
++  29s [A] post_bond stripped (owner, second) ACCEPTED    10s {"amount_wei":"1000000000000000000","bond_id":2,"bond_status":"PENDING","next":"verify_bond(2) - anyone may call it","status":"OK"}
++  38s [A] post_bond attributed               ACCEPTED     9s {"amount_wei":"1000000000000000000","bond_id":3,"bond_status":"PENDING","next":"verify_bond(3) - anyone may call it","status":"OK"}
++  41s [B] post_bond vanishing                ACCEPTED    11s {"amount_wei":"1000000000000000000","bond_id":1,"bond_status":"PENDING","next":"verify_bond(1) - anyone may call it","status":"OK"}
++  54s [A] verify_bond stripped               ACCEPTED    16s {"bond_id":2,"challenge_until":1790708588,"license_path":"LICENSE","outcome":"ACTIVE","rival_pending_bonds_rejected":1,"status":"OK"}
++  58s [B] verify_bond vanishing              ACCEPTED    18s {"bond_id":1,"challenge_until":1790708592,"license_path":"LICENSE","outcome":"ACTIVE","rival_pending_bonds_rejected":0,"status":"OK"}
++  65s [A] verify_bond attributed             ACCEPTED    11s {"bond_id":3,"challenge_until":1790708604,"license_path":"LICENSE","outcome":"ACTIVE","rival_pending_bonds_rejected":0,"status":"OK"}
++  66s [A] is_compliant stripped=true attributed=true
++  69s [A] squatter bond #1: REJECTED SUPERSEDED_REPOSITORY_ALREADY_BONDED; slot -> #2
++  69s [B] challenge (original readable)      ACCEPTED    11s {"bond_id":1,"challenge_id":1,"judge_deadline":1790708308,"next":"judge(1) - anyone may call it","status":"OK"}
++  80s [B] challenge (original will vanish)   ACCEPTED    11s {"bond_id":1,"challenge_id":2,"judge_deadline":1790708317,"next":"judge(2) - anyone may call it","status":"OK"}
++  83s [B] made kenil1710/licenseguard-fixture-vanishing and kenil1710/licenseguard-fixture-origin-vanishing PRIVATE; raw.githubusercontent.com caches for max-age=300 (measured), so judging waits past it
++  83s [A] challenge stripped copy            ACCEPTED    14s {"bond_id":2,"challenge_id":1,"judge_deadline":1790708258,"next":"judge(1) - anyone may call it","status":"OK"}
++  84s [B] waiting 304s: CDN cache of the bonded LICENSE to expire
++  95s [A] challenge attributed copy          ACCEPTED    12s {"bond_id":3,"challenge_id":2,"judge_deadline":1790708274,"next":"judge(2) - anyone may call it","status":"OK"}
++ 105s [A] challenge unrelated file           ACCEPTED     9s {"bond_id":3,"challenge_id":3,"judge_deadline":1790708284,"next":"judge(3) - anyone may call it","status":"OK"}
++ 117s [A] REFUSAL: path outside bonded repo  ACCEPTED    12s {"claim_with":"claim()","reason":"copied path has an empty, '.' or '..' segment: ../../evil/other/src/slugify.js","refunded_wei":"200000000000000000","status":"REJECTED"}
++ 134s [A] REFUSAL: same copied file via a fork (A3) ACCEPTED    17s {"claim_with":"claim()","reason":"src/slugify.js on bond #2 is already challenged (challenge #1, filed, unjudged); one challenge per copied file, and a copied file that has paid is never pai
++ 145s [A] REFUSAL: LICENSE vs LICENSE (A1)   ACCEPTED    12s {"claim_with":"claim()","reason":"license, notice and third-party-notice files cannot be challenged as copied or original files: two license texts are alike by design","refunded_wei":"200000
++ 158s [A] judge stripped                     ACCEPTED    13s {"challenge_id":1,"content_hash":"156eded22e66be50c3f3a85dc2ca7e01df65271c9708b2f818f26f715a93e10e","contest_until":1790708097,"model_called":false,"outcome":"ATTRIBUTION_MISSING","reason":"
++ 188s [A] judge attributed                   ACCEPTED    30s {"challenge_id":2,"content_hash":"1a2b838d1501d7e17e02e14f79e8232dfbd346b111b5dcb8656a12aa28df8303","contest_until":1790708114,"model_called":true,"outcome":"COMPLIANT","reason":"ATTRIBUTION
++ 200s [A] judge unrelated                    ACCEPTED    12s {"challenge_id":3,"content_hash":"9262f319b9004538af1b7697abd2ed45b45b8a5e9f0e5bc1e17e11e87fca0c54","contest_until":1790708138,"model_called":false,"outcome":"NOT_DERIVED","reason":"BELOW_SI
++ 211s [A] contest NOT_DERIVED (challenger)   ACCEPTED    11s {"challenge_id":3,"contest_deadline":1790708390,"next":"judge(3) re-reads the same pinned files","side":"CHALLENGER","status":"OK"}
++ 222s [A] judge contest re-read              ACCEPTED    11s {"challenge_id":3,"contest":"HELD","contest_until":1790708160,"outcome":"NOT_DERIVED","reason":"BELOW_SIMILARITY_THRESHOLD","status":"OK"}
++ 224s [A] waiting 127s: contest window of #1
++ 364s [A] finalize #1 (ATTRIBUTION_MISSING)  ACCEPTED    14s {"bond_status":"NON_COMPLIANT","challenge_id":1,"claim_with":"claim()","outcome":"ATTRIBUTION_MISSING","paid_challenger_wei":"700000000000000000","paid_project_wei":"0","status":"OK"}
++ 366s [A] waiting 2s: contest window of #2
++ 379s [A] finalize #2 (COMPLIANT)            ACCEPTED    11s {"bond_status":"ACTIVE","challenge_id":2,"claim_with":"claim()","outcome":"COMPLIANT","paid_challenger_wei":"0","paid_project_wei":"200000000000000000","status":"OK"}
++ 380s [A] waiting 34s: contest window of #3
++ 400s [B] judge #1 (bonded repo private, original readable) ACCEPTED    12s {"challenge_id":1,"content_hash":"35978f487f2753cfa2e7a9b3a868315db91d9224ec8047c732a90fd27da5c87a","contest_until":1790708338,"model_called":false,"outcome":"ATTRIBUTION_MISSING","reason":"
++ 411s [B] judge #2 (both private)            ACCEPTED    11s {"challenge_id":2,"note":"nothing changed; judge may be called again","outcome":"RETRY","reason":"the bonded commit's LICENSE answered 404 and the original answered 404","retry_until":179070
++ 422s [B] REFUSAL: withdraw while forfeit open ACCEPTED    10s {"reason":"bond #1 has 2 open challenge(s)","status":"REJECTED"}
++ 422s [B] waiting 149s: judge deadline of #2
++ 424s [A] finalize #3 (NOT_DERIVED)          ACCEPTED    10s {"bond_status":"ACTIVE","challenge_id":3,"claim_with":"claim()","outcome":"NOT_DERIVED","paid_challenger_wei":"0","paid_project_wei":"200000000000000000","status":"OK"}
++ 426s [A] is_compliant stripped=false attributed=true
++ 427s [A] waiting 416s: bond #2 lock
++ 591s [B] judge #2 after deadline (refused)  ACCEPTED    20s {"reason":"challenge #2 passed its deadline; call settle_stalled(2)","status":"REJECTED"}
++ 602s [B] settle_stalled #2                  ACCEPTED    11s {"bond_lock_released":true,"challenge_id":2,"claim_with":"claim()","outcome":"INCONCLUSIVE","reason":"DEADLINE_PASSED_BONDED_UNREADABLE","refunded_wei":"200000000000000000","status":"OK"}
++ 615s [B] finalize #1 (ATTRIBUTION_MISSING)  ACCEPTED    12s {"bond_status":"NON_COMPLIANT","challenge_id":1,"claim_with":"claim()","outcome":"ATTRIBUTION_MISSING","paid_challenger_wei":"700000000000000000","paid_project_wei":"0","status":"OK"}
++ 616s [B] is_compliant vanishing=false
++ 617s [B] waiting 229s: bond lock
++ 855s [A] withdraw_bond #2                   ACCEPTED    12s {"bond_id":2,"claim_with":"claim()","status":"OK","withdrawn_wei":"500000000000000000"}
++ 856s [A] waiting 2s: bond #3 lock
++ 858s [B] withdraw_bond                      ACCEPTED    12s {"bond_id":1,"claim_with":"claim()","status":"OK","withdrawn_wei":"500000000000000000"}
++ 868s [B] claim proj3 (0.500000 GEN)         ACCEPTED     9s {"paid_gen":"0.5","paid_wei":"500000000000000000","status":"OK"}
++ 871s [A] withdraw_bond #3                   ACCEPTED    13s {"bond_id":3,"claim_with":"claim()","status":"OK","withdrawn_wei":"1000000000000000000"}
++ 879s [B] claim chal3 (0.700000 GEN)         ACCEPTED    10s {"paid_gen":"0.7","paid_wei":"700000000000000000","status":"OK"}
++ 883s [A] claim proj1 (0.500000 GEN)         ACCEPTED    11s {"paid_gen":"0.5","paid_wei":"500000000000000000","status":"OK"}
++ 890s [B] claim outsider (0.200000 GEN)      ACCEPTED    10s {"paid_gen":"0.2","paid_wei":"200000000000000000","status":"OK"}
++ 895s [A] claim proj2 (1.500000 GEN)         ACCEPTED    11s {"paid_gen":"1.5","paid_wei":"1500000000000000000","status":"OK"}
++ 896s [B] DONE stats {"balance_wei":"0","bonds":1,"books_zero":true,"challenges":2,"held_in_bonds_wei":"0","held_in_challenges_wei":"0","held_wei":"0","ledger_ok":true,"paused":false,"payable_wei":"0","total_bonds":1,"total_challenges":2,"total_claimed_wei":"1400000000000000000","total_contests":0,"total_finalized":1,"total_judgements":1,"total_rejected":2,"total_retries":1,"total_stalled":1}
++ 918s [A] claim chal1 (0.700000 GEN)         ACCEPTED    22s {"paid_gen":"0.7","paid_wei":"700000000000000000","status":"OK"}
++ 929s [A] claim chal2 (0.600000 GEN)         ACCEPTED    10s {"paid_gen":"0.6","paid_wei":"600000000000000000","status":"OK"}
++ 940s [A] claim chal3 (1.000000 GEN)         ACCEPTED    11s {"paid_gen":"1.0","paid_wei":"1000000000000000000","status":"OK"}
++ 950s [A] DONE stats {"balance_wei":"0","bonds":3,"books_zero":true,"challenges":3,"held_in_bonds_wei":"0","held_in_challenges_wei":"0","held_wei":"0","ledger_ok":true,"paused":false,"payable_wei":"0","total_bonds":3,"total_challenges":3,"total_claimed_wei":"4300000000000000000","total_contests":1,"total_finalized":3,"total_judgements":4,"total_rejected":3,"total_retries":0,"total_stalled":0}
++ 950s [*] seed finished in 15.8 min

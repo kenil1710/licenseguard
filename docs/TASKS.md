@@ -75,8 +75,12 @@ Status legend: [ ] todo · [~] in progress · [x] done · [!] blocked (reason in
 - [x] ~/Desktop/licenseguard-addresses.txt; pushed; GitHub bytes == chain bytes
 
 ## Identity fixes (round 2)
-- [ ] 1 no squatting: post_bond reserves nothing; several PENDING per repo; first verified wins; other PENDING rejected + refunded
-- [ ] 2 current control: `.licenseguard` must name the bonder at the bonded commit AND at raw .../HEAD/.licenseguard
-- [ ] 3 exact line match (trimmed, case-insensitive); raw checks before any API call
-- [ ] fixtures re-committed with the exact-line marker format
-- [ ] tests; redeploy x3; byte-for-byte; reseed incl. squatter; drain 0; audit; README; addresses; push
+- [x] 1 no squatting: post_bond reserves nothing; several PENDING per repo; first verified wins; other PENDING rejected + refunded
+- [x] 2 current control: `.licenseguard` must name the bonder at the bonded commit AND at raw .../HEAD/.licenseguard
+- [x] 3 exact line match (trimmed, case-insensitive); raw checks before any API call
+- [x] fixtures re-committed with the exact-line marker format
+- [x] tests; redeploy x3; byte-for-byte; reseed incl. squatter; drain 0; audit; README; addresses; push
+- [x] eager rejection of rival pending bonds capped at 25 per activating call (a squatter posting thousands cannot make the owner's verification too expensive); the rest are rejected the moment anyone touches them, no validator needed
+- [x] "only an ACTIVE bond occupies the slot": a NON_COMPLIANT bond (verified, not yet withdrawn) also keeps it, so a project found non-compliant cannot post a fresh bond to reset its badge
+- [x] live: the CDN served the pre-push HEAD marker for up to 300 s after the fixture pushes (measured) - documented as a limit
+- [x] 640 offline tests; redeployed x3 (7d095cb0..., policy 1.2.0) byte-for-byte; reseed 15.8 min incl. squatter superseded on chain; both demos drained to 0; audit 48/0; README; addresses; pushed

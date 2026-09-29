@@ -5,12 +5,12 @@
       "chain_id": 61997,
       "explorer": "https://explorer-studio-dev.genlayer.com/",
       "LicenseGuard": {
-        "address": "0xe8cf318130b9C57BB91D7F67f544bFfACA29fFd7",
-        "deploy_tx": "0x4cf4b202537f3b1172dba237a05ec23bc7e547817025fb089d06efdd521ce78d",
+        "address": "0x55fBEB7cb33cB753A2607CB550d0aB0568e674D4",
+        "deploy_tx": "0xf5997d5e26253f5c9f6c34ee3de908f5dc856892ca82f1509f85ab853bec0acd",
         "label": "canonical",
-        "source_bytes": 123063,
-        "source_sha256": "7cf70cef27b5e3c39c29d40cf55f888c7a74783777bf3fec3dd8d86e6fd6c7c9",
-        "policy_version": "1.1.0",
+        "source_bytes": 128508,
+        "source_sha256": "7d095cb00c84ec460094019668c3625d446f09e1def436edd4fcdb62474c8a68",
+        "policy_version": "1.2.0",
         "owner": "0x235744d240Cf84e4fb5c36b712f3E4F405933214",
         "constructor": {
           "min_bond_wei": "1000000000000000000",
@@ -21,15 +21,15 @@
           "contest_window_s": "172800",
           "deadline_s": "86400"
         },
-        "deployed_at": "2026-09-29T18:20:22.264Z"
+        "deployed_at": "2026-09-29T18:48:45.242Z"
       },
       "LicenseGuardDemo": {
-        "address": "0x531aE9C6ac7db213dC075123Ab797f594A46E587",
-        "deploy_tx": "0x20ccefb2f1a5d98e17c30e8c201d76d13af77a3229b6575084a519f2e4d973f4",
+        "address": "0x7F47B8229b92f055679885854c41afe4e4741f88",
+        "deploy_tx": "0x0f73a7c2f2254b3c67bd4aa0d373f5cbde8ece0ca66d1219b17bb747ad6c49d1",
         "label": "DEMO (outcomes, contest, refusals): windows in minutes",
-        "source_bytes": 123063,
-        "source_sha256": "7cf70cef27b5e3c39c29d40cf55f888c7a74783777bf3fec3dd8d86e6fd6c7c9",
-        "policy_version": "1.1.0",
+        "source_bytes": 128508,
+        "source_sha256": "7d095cb00c84ec460094019668c3625d446f09e1def436edd4fcdb62474c8a68",
+        "policy_version": "1.2.0",
         "owner": "0x235744d240Cf84e4fb5c36b712f3E4F405933214",
         "constructor": {
           "min_bond_wei": "1000000000000000000",
@@ -40,15 +40,15 @@
           "contest_window_s": "180",
           "deadline_s": "420"
         },
-        "deployed_at": "2026-09-29T18:20:29.379Z"
+        "deployed_at": "2026-09-29T18:48:54.589Z"
       },
       "LicenseGuardDemoStall": {
-        "address": "0x67960678e52857a3B225275Ff3dDDCFb59a31970",
-        "deploy_tx": "0x760b7a8e87d76e6530d07928b9dc4e0817b28c05703589d1bfc76ba643d4b5cb",
+        "address": "0x29baAefBE1bFbE9b8bF4811ff25349ED0c54E7Bb",
+        "deploy_tx": "0x09a25e93aa0301d1f09ec384054f6b9b1e65451e2a51040d44c7618b8cb01070",
         "label": "DEMO (forfeit, unreadable-to-deadline): windows in minutes",
-        "source_bytes": 123063,
-        "source_sha256": "7cf70cef27b5e3c39c29d40cf55f888c7a74783777bf3fec3dd8d86e6fd6c7c9",
-        "policy_version": "1.1.0",
+        "source_bytes": 128508,
+        "source_sha256": "7d095cb00c84ec460094019668c3625d446f09e1def436edd4fcdb62474c8a68",
+        "policy_version": "1.2.0",
         "owner": "0x235744d240Cf84e4fb5c36b712f3E4F405933214",
         "constructor": {
           "min_bond_wei": "1000000000000000000",
@@ -59,7 +59,7 @@
           "contest_window_s": "180",
           "deadline_s": "480"
         },
-        "deployed_at": "2026-09-29T18:20:38.819Z"
+        "deployed_at": "2026-09-29T18:49:07.677Z"
       }
     }
   }

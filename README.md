@@ -99,11 +99,25 @@ Concretely, in `contracts/LicenseGuard.py`:
   unbond delay after the last one closes — never past its challenge window
   plus that delay.
 - **Nobody can choose a source that decides their own case.**
-  - The bonded commit must be in the bonded repository's **default-branch
-    history** and carry a `.licenseguard` file naming the bonder. GitHub
-    serves a fork's commits through the parent repository's URLs (measured —
-    `docs/PROBE.md`), so without this anyone could bond a clean fork commit
-    under a famous repository's name.
+  - **Only whoever controls the repository can bond it.** `.licenseguard`
+    must contain the bonder's address **on a line of its own** (trimmed,
+    case-insensitive; a mere substring doesn't count) both at the bonded
+    commit **and at the repository's current head**
+    (`raw.githubusercontent.com/{repo}/HEAD/.licenseguard`) — an old commit
+    naming a former maintainer can't activate a bond. The bonded commit must
+    also be in the **default-branch history**: GitHub serves a fork's commits
+    through the parent repository's URLs (measured — `docs/PROBE.md`), so
+    without this anyone could bond a clean fork commit under a famous
+    repository's name. These raw-file checks run **before** any GitHub API
+    call, so a bond that can't verify costs none of the validators' shared
+    API budget.
+  - **No squatting.** A pending bond reserves nothing: several may be pending
+    on one repository. The first to verify becomes ACTIVE and takes the
+    repository's one slot; every other pending bond on it is rejected and
+    refunded (up to 25 in that same call, any others the moment anyone
+    touches them — no validator needed). Only a verified bond occupies the
+    slot (ACTIVE, or NON_COMPLIANT until it's withdrawn — a bond found
+    non-compliant can't be replaced by a fresh one to reset the badge).
   - When a result would pay the challenger, the original commit must be in
     the original repository's default-branch history, and that repository
     must have been **created before the bond was posted** (GitHub's
@@ -125,25 +139,26 @@ minute-scale windows so the seed fits in 20 minutes.
 
 | instance | address | constructor |
 |---|---|---|
-| LicenseGuard | `0xe8cf318130b9C57BB91D7F67f544bFfACA29fFd7` | challenge window 2592000s, unbond 604800s, contest 172800s, deadline 86400s |
-| LicenseGuardDemo | `0x531aE9C6ac7db213dC075123Ab797f594A46E587` | challenge window 780s, unbond 60s, contest 180s, deadline 420s |
-| LicenseGuardDemoStall | `0x67960678e52857a3B225275Ff3dDDCFb59a31970` | challenge window 780s, unbond 60s, contest 180s, deadline 480s |
+| LicenseGuard | `0x55fBEB7cb33cB753A2607CB550d0aB0568e674D4` | challenge window 2592000s, unbond 604800s, contest 172800s, deadline 86400s |
+| LicenseGuardDemo | `0x7F47B8229b92f055679885854c41afe4e4741f88` | challenge window 780s, unbond 60s, contest 180s, deadline 420s |
+| LicenseGuardDemoStall | `0x29baAefBE1bFbE9b8bF4811ff25349ED0c54E7Bb` | challenge window 780s, unbond 60s, contest 180s, deadline 480s |
 
-Policy 1.1.0. Source sha256 `7cf70cef27b5e3c39c29d40cf55f888c7a74783777bf3fec3dd8d86e6fd6c7c9` (123063 bytes) on all three. The first deployment (policy 1.0.0, before the independent review) and its evidence are archived in `docs/superseded/v1.0.0/`.
+Policy 1.2.0. Source sha256 `7d095cb00c84ec460094019668c3625d446f09e1def436edd4fcdb62474c8a68` (128508 bytes) on all three. Earlier deployments and their evidence are archived in `docs/superseded/` (v1.0.0: before the independent review; v1.1.0: before the identity fixes).
 
-### The seed (15.6 minutes, `test/seed.mjs`, every tx in `docs/seed-evidence.json`)
+### The seed (15.8 minutes, `test/seed.mjs`, every tx in `docs/seed-evidence.json`)
 
 Original: `sindresorhus/slugify@3b17b2e84b97624a683aafaa38184bf2746fab22` — `index.js`, MIT, notice in its `license` file.
 
 | result | files | how it was decided | money | decisive tx | second tx |
 |---|---|---|---|---|---|
-| **ATTRIBUTION_MISSING** | `slugify/index.js` → `licenseguard-fixture-stripped/src/slugify.js` | similarity 10000 bps; holder "sindre sorhus" found nowhere in the copy or notice files → code alone, **no model call**; origin checked (repo created 2018, commit in history, dated before the bonded commit) | challenger +0.2 stake +0.5 slash; bond → NON_COMPLIANT | `0x5c9a9fa1ad4140c255cd3076bb10effc547d7664ca7f70ccdb6ed52382699c90` | `0x2faff5bcced50eb4b695995d6280de9651af8c0a9e7edd7eab1faf5bc8281aed` |
-| **COMPLIANT** | `slugify/index.js` → `licenseguard-fixture-attributed/vendor/slugify.js` | holder in the file header → **model asked**: meets_requirement YES / missing NONE, agreed by consensus; no GitHub API call | project +0.2 | `0x593651cbd776e53c29324d014a68b84b7381f875deae151e1ee8387f14e84891` | `0x559b53d833a94cace1972b8eac6606824fd4db21c880d73798355ea01e7a9d45` |
-| **NOT_DERIVED** | `slugify/index.js` vs `licenseguard-fixture-attributed/src/app.js` | similarity 263 bps (< 5000) → code alone | project +0.2 | `0x571f11ed30482c1ca002bec4a95d257bb95eccb10b397b4a1fa3cdf9ad5abd23` | `0xcaf21f54c05a4d2b039cc2d5a122f93406c60b19d7ebde8de55fafa4b5b60054` |
-| **contest HELD** | challenger contests #3 | re-read of the same pinned files: NOT_DERIVED again | contest bond 0.1 → project | `0xb6d84a71e1f8cb219f86661e5815c9a92b45a9a584e6c8801c705d89c9b2d684` | `0x3449f1b02b2b32f37f2e20dbead544be37ff746a68d8e709df890a2af9f912e2` |
-| **refusals (A1, A3, threat 1)** | `LICENSE` vs `license`; `src/slugify.js` again via the fork `anneeeee/slugify`; `../../evil/other/…` | refused before any validator: license files are not copied works; the copied file is already challenged; path escape | value sent stays claimable | `0x2e5f07ca6a63fe7f6795b7d36bb6a4e702dc91ff95aac03bef957ae23a41be5f` | `0xdfbec10dd606a6d80a28d4431c5fe483e11c079da165c13855391b9ac4497c00` |
-| **FORFEIT (A4)** | `licenseguard-fixture-vanishing` made **private** after the challenge; original `sindresorhus/slugify` still readable | bonded commit answered 404, original 200 → `FORFEIT_BONDED_COMMIT_WITHDRAWN`; origin checks passed; withdraw refused while it was open | challenger +0.2 stake +0.5 slash; bond forfeited | `0xa72afde3469391c4204bcac540ec7a8b9c4fdaaf337bb6cf0275e18b52f3aa85` | `0x3236dd7e17311ba0372123110ba0d436e6a38884cef8896c5c4d8ee4140c3760` |
-| **nobody can read → INCONCLUSIVE** | second challenge on the same bond; its original `licenseguard-fixture-origin-vanishing` made private too | both answered 404 → RETRY (`BONDED_UNREADABLE`) → judge refused after the 480 s deadline → `settle_stalled` → INCONCLUSIVE `DEADLINE_PASSED_BONDED_UNREADABLE` | stake refunded, no slash | `0xb530ac958055abb7e1866fc8d27309b579a73e85853efe4a3397e9bf16f3d221` | `0xd23d67ee705cb7f585e6822aff80ad2930fa86fe0dfcc11d09bb64d8961f40a7` |
+| **no squatting** | a squatter (`chal3`, not named in `.licenseguard`) posts a bond on `licenseguard-fixture-stripped` **first**; the owner (`proj1`) posts second | pending bonds reserve nothing; the owner's bond verifies (marker names it at the commit and at HEAD) and takes the slot; the squatter's pending bond #1 is rejected in the same call (`SUPERSEDED_REPOSITORY_ALREADY_BONDED`) | squatter refunded in full | `0x4ef0a8207ba0e8fb5667cfee0c8f5887637d2c02c3edaf6ef241745bf4877142` | `0xd297e267e99ba639918b984c2151805a05c889294eb01f986f453eec19a42368` |
+| **ATTRIBUTION_MISSING** | `slugify/index.js` → `licenseguard-fixture-stripped/src/slugify.js` | similarity 10000 bps; holder "sindre sorhus" found nowhere in the copy or notice files → code alone, **no model call**; origin checked (repo created 2018, commit in history, dated before the bonded commit) | challenger +0.2 stake +0.5 slash; bond → NON_COMPLIANT | `0xffd74a0c294c043942d1774181854d40af17a2c9b26a54daa4c7694d727a0040` | `0xe0356af87ef281eb7f4c660ee3205c8389afb6da138885fdcbcd4c0c2b2736fc` |
+| **COMPLIANT** | `slugify/index.js` → `licenseguard-fixture-attributed/vendor/slugify.js` | holder in the file header → **model asked**: meets_requirement YES / missing NONE, agreed by consensus; no GitHub API call | project +0.2 | `0x8be874e6a3243de2f32ae7880551d03d8884399a14b0039a551c949c9840f935` | `0xdd622e0abbade3813ca9e8b3a3417f6a139962574c224001d840aed55596d2b5` |
+| **NOT_DERIVED** | `slugify/index.js` vs `licenseguard-fixture-attributed/src/app.js` | similarity 263 bps (< 5000) → code alone | project +0.2 | `0xd6fe477323c32be181643ae585382aa6917dcb60889b3e7b57e3a94ea9616a5e` | `0x5da1790bc823bf6c4f7cbadfde4797d6b5387e7c461197f41c34665a9aa01d3c` |
+| **contest HELD** | challenger contests #3 | re-read of the same pinned files: NOT_DERIVED again | contest bond 0.1 → project | `0x488522ada3d6d1a5b464969a875ca13ce9703783323b61d0b36fd11ca04020e4` | `0xa82f2d65a39ad58d1e569dad26a2848f882cb43cbc1da46915bc6edef3c4d6b5` |
+| **refusals (A1, A3, threat 1)** | `LICENSE` vs `license`; `src/slugify.js` again via the fork `anneeeee/slugify`; `../../evil/other/…` | refused before any validator: license files are not copied works; the copied file is already challenged; path escape | value sent stays claimable | `0x64399aa70f03be5a74c73652b070b387b678a3be1155149439a0b926e52f28d6` | `0x0e78327e3cbf5c742be266cee224e9684814965aae5d9fd97d87edf644bc3761` |
+| **FORFEIT (A4)** | `licenseguard-fixture-vanishing` made **private** after the challenge; original `sindresorhus/slugify` still readable | bonded commit answered 404, original 200 → `FORFEIT_BONDED_COMMIT_WITHDRAWN`; origin checks passed; withdraw refused while it was open | challenger +0.2 stake +0.5 slash; bond forfeited | `0xb591366ea14ff2b77410f6e5cda7cd8a6cc7aeca2b8dc48c58e422720c38bfd6` | `0x2bca49991400351ca78b3e4997fa2cfea9bb34a75c2551c1c00c9bb9c08d8303` |
+| **nobody can read → INCONCLUSIVE** | second challenge on the same bond; its original `licenseguard-fixture-origin-vanishing` made private too | both answered 404 → RETRY (`BONDED_UNREADABLE`) → judge refused after the 480 s deadline → `settle_stalled` → INCONCLUSIVE `DEADLINE_PASSED_BONDED_UNREADABLE` | stake refunded, no slash | `0xe79f21a61e8c7c634070cf43bd51d6d4677fa6dfe3fcaa5fe70e006b0a6f0d8a` | `0x988c30719ab09587dd07922bf61872d26568bd8b9595555001fcaa0d61fa48d4` |
 
 Then every bond was withdrawn and every balance claimed: both demo instances end at **balance 0 = held 0 + payable 0** (`get_stats`: `books_zero: true`, `ledger_ok: true`), and `verify_challenge` recomputes every judged challenge as consistent.
 
@@ -158,9 +173,9 @@ Then every bond was withdrawn and every balance claimed: both demo instances end
     node peek.mjs LicenseGuardDemo get_challenge 1
     node peek.mjs LicenseGuardDemo verify_challenge 1   # recomputes hashes, similarity, outcome
     python3 -m unittest -q test_logic test_threats test_random test_attacks
-    python3 ../tools/audit.py                     # 44 checks -> docs/AUDIT.md
+    python3 ../tools/audit.py                     # 48 checks -> docs/AUDIT.md
 
-The offline suite is 619 tests: every threat in the brief has its own class
+The offline suite is 640 tests: every threat in the brief has its own class
 (`test/test_threats.py`), every finding of the independent review has its
 own (`test/test_attacks.py`), and 90 randomized lifecycles — including repos
 going private mid-challenge — must each drain to exactly zero
@@ -199,6 +214,11 @@ going private mid-challenge — must each drain to exactly zero
   `THIRD_PARTY*` files with non-code extensions can't be challenged; a copy
   hidden in, say, `NOTICE.txt` is out of reach. Code extensions (`notice.js`)
   stay challengeable.
+- **Control changes take up to 5 minutes to be seen.** The head's
+  `.licenseguard` is read through GitHub's raw CDN, which caches for 300 s:
+  removing a maintainer's address takes effect for new verifications after
+  that. A verified bond stays verified; control is checked when the bond is
+  verified, not continuously.
 - **A real outage can't be demonstrated on demand.** The seed shows the
   RETRY-to-deadline path with both sources made unreadable; a GitHub 5xx or
   timeout follows the same path in the offline tests but can't be produced on
