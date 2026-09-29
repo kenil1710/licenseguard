@@ -50,15 +50,26 @@ Status legend: [ ] todo · [~] in progress · [x] done · [!] blocked (reason in
 - [x] docs/ATTACK_BRIEF.md
 
 ## Independent review, round 1 (test/test_attacks.py) — five findings
-- [ ] A1 license/notice/third-party filenames refused as copied_path or original_path (any case, any extension), before any fetch
-- [ ] A1 extra: an original FILE that is itself a license text (after comment stripping) is NOT_DERIVED - closes the same attack under any other filename
-- [ ] A2 comments stripped inside lines (string-aware): /* */ anywhere (multi-line too), // and # to end of line
-- [ ] A3 one open challenge per (bond, copied_path); a paid copied file is closed for good; slash per copied file capped at SLASH_BPS
-- [ ] A3 check: a losing challenge must not lock the path (else a project's sock-puppet burns its own copied files for free)
-- [ ] A4 bonded commit 404/410/451 while the original is readable = FORFEIT (ATTRIBUTION_MISSING money); only outages RETRY -> INCONCLUSIVE
-- [ ] A4 withdraw blocked while any challenge (incl. a forfeit) is open
-- [ ] A5 contest re-read with the bonded commit gone -> forfeit (challenger's contest wins); stalled challenger contest with bonded side unreadable -> settled against the project
-- [ ] ALSO original commit must be dated before the bonded commit, on paying paths only; bonded date floored at the bonded repo's created_at (else a backdated bonded commit vetoes every challenge)
-- [ ] test_attacks.py kept in the suite; tests whose preconditions the specified fixes change are updated to the specified behaviour, each noted
-- [ ] review each fix for new stuck paths / unilateral control
-- [ ] redeploy x3, byte-for-byte; reseed (A1 refusal, private-repo forfeit, real outage INCONCLUSIVE); drain to 0; audit; README; push; addresses file
+- [x] A1 license/notice/third-party filenames refused as copied_path or original_path (any case, any extension), before any fetch
+- [x] A1 extra: an original FILE that is itself a license text (after comment stripping) is NOT_DERIVED - closes the same attack under any other filename
+- [x] A2 comments stripped inside lines (string-aware): /* */ anywhere (multi-line too), // and # to end of line
+- [x] A3 one open challenge per (bond, copied_path); a paid copied file is closed for good; slash per copied file capped at SLASH_BPS
+- [x] A3 check: a losing challenge must not lock the path (else a project's sock-puppet burns its own copied files for free)
+- [x] A4 bonded commit 404/410/451 while the original is readable = FORFEIT (ATTRIBUTION_MISSING money); only outages RETRY -> INCONCLUSIVE
+- [x] A4 withdraw blocked while any challenge (incl. a forfeit) is open
+- [x] A5 contest re-read with the bonded commit gone -> forfeit (challenger's contest wins); stalled challenger contest with bonded side unreadable -> settled against the project
+- [x] ALSO original commit must be dated before the bonded commit, on paying paths only; bonded date floored at the bonded repo's created_at (else a backdated bonded commit vetoes every challenge)
+- [x] test_attacks.py kept in the suite; tests whose preconditions the specified fixes change are updated to the specified behaviour, each noted
+- [x] review each fix for new stuck paths / unilateral control
+- [~] redeploy x3, byte-for-byte; reseed (A1 refusal, private-repo forfeit, real outage INCONCLUSIVE); drain to 0; audit; README; push; addresses file
+
+### Round 1 notes
+- [x] found while checking the fixes, and fixed: (1) A1 "any extension" would let a copier rename a stolen file to notice.js -> code extensions exempt, content gate covers license texts under code names; (2) A3's per-file key alone lets a project's sock-puppet lock its own files with a losing challenge -> a losing challenge frees the file; (3) A2 inline stripping alone is fooled by a regex like /[ /*]/ opening a fake block comment -> second measure M2 reads the copy whole; (4) the ALSO date check alone lets a project backdate its bonded commit to veto everything -> bonded date floored at the bonded repo's created_at; (5) a stall settlement flag is cleared when a later re-read replaces the vector
+- [x] measured: validators fetch 8/30/90 MB raw files fine (docs/probe/raw_*mb.json) - size cannot produce a fetch failure; a real GitHub outage cannot be produced on demand without exhausting the validators' shared API budget (not done); the seed shows the RETRY-to-deadline path with both sources unreadable instead
+- [x] "withdraw blocked ... or was forfeited": implemented as blocked while any challenge (a forfeit included) is open; the remainder after a finalized forfeit is withdrawable after the window + unbond delay - a permanent block would leave value in the contract with no exit (D3, S10)
+- [x] 619 offline tests (427 logic, 71 threat, 97 random, 24 attacks)
+- [x] redeployed x3 (7cf70cef..., policy 1.1.0), byte-for-byte verified
+- [x] reseed 15.6 min: A1 + A3 + path refusals on chain; forfeit paid the challenger (0.2 + 0.5); both-unreadable RETRY -> deadline -> INCONCLUSIVE refund; withdraw refused while forfeit open; contest HELD; all three outcomes; both demos drained to 0 (native balances 3.3 / 1.4 GEN = claimed, Studio Dev transfers undelivered, as before)
+- [!] "a real outage ending INCONCLUSIVE" on chain: not producible without degrading Studio Dev for others (shared API budget); shown with both sources unreadable instead, outage cases covered offline
+- [x] audit 44 PASS / 0 FAIL; README rules + limits rewritten (old private-repo escape removed); ATTACK_BRIEF updated
+- [x] ~/Desktop/licenseguard-addresses.txt; pushed; GitHub bytes == chain bytes

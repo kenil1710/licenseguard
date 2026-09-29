@@ -27,6 +27,29 @@ the stake), INCONCLUSIVE (stake refunded). One contest per side re-reads the
 same facts. `finalize` credits; `claim` transfers. Deadlines everywhere;
 `settle_stalled` / `settle_stalled_bond` are the exits.
 
+## Since the first review (policy 1.1.0)
+
+Round 1 found five breaks (`test/test_attacks.py`, kept in the suite). The
+fixes changed these rules - attack them too:
+
+- The violation is the **copied file**: key `(bond, copied_path)`; one open
+  challenge per copied file; once it pays, never again; the 50% slash is
+  capped per copied file. A LOSING challenge frees the file (anti-sock-puppet)
+  - can the project still occupy a file (contests, RETRY loops)?
+- **Forfeit:** bonded commit 404/410/451 while the original is readable =
+  ATTRIBUTION_MISSING money (origin checks still apply). Both unreadable =
+  RETRY `BONDED_UNREADABLE`; a CHALLENGER's contest stalled that way is won
+  at the deadline unless the stored reason was ORIGIN_* - can a challenger
+  delete its own original to skip the origin checks?
+- **Similarity** is max(M1: comments stripped from both, M2: original
+  stripped vs the copy read whole without `/ * #`). Can a challenger craft an
+  original that matches the bonded file's comments/docs under M2?
+- **License-like filenames** (non-code extensions) are refused; an original
+  whose code tokens are a license text is NOT_DERIVED.
+- **Direction:** the original commit must predate the bonded commit, whose
+  date is floored at the bonded repo's `created_at`. Commit dates are
+  forgeable by whoever commits.
+
 ## Rules the contract claims (try to break each)
 
 1. Consensus binds every stored value; the leader cannot forge a field.
